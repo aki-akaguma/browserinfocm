@@ -1,0 +1,60 @@
+[package]
+name = "browserinfocm"
+version = "0.1.1"
+authors = ["aki <aki.akaguma@hotmail.com>"]
+edition = "2021"
+description = """
+browser and hardware information.
+"""
+keywords = ["webapp", "javascript", "desktop", "android"]
+categories = ["web-programming"]
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+rust-version = "1.90.0"
+repository = "https://github.com/aki-akaguma/broinfocm"
+
+[dependencies]
+browserinfo = "0.1.2"
+
+dioxus = { version = "0.7.2", features = ["fullstack"] }
+dioxus-logger = "0.7.2"
+
+anyhow = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde_cbor = { version = "0.10", optional = true }
+toml = "0.9"
+
+async-std = { version="*", optional=true }
+reqwest = { version = "0.12", features = ["json"], optional=true }
+
+rusqlite = { version = "0.37", optional = true }
+hmac-sha256 = { version="1.1", optional = true }
+base64 = { version="0.22", optional = true }
+
+
+[target.'cfg(target_os = "android")'.dependencies]
+openssl = { version = "0.10", features = ["vendored"] }
+
+
+[features]
+default = []
+
+web = ["dioxus/web"]
+desktop = ["dioxus/desktop", "database"]
+mobile = ["dioxus/mobile"]
+server = ["dioxus/server", "database"]
+
+database = ["dep:rusqlite", "dep:hmac-sha256", "dep:base64"]
+
+next_backend = ["dep:serde_cbor", "dep:reqwest"]
+backend_delay = ["dep:async-std"]
+backend_text = []
+
+[[bin]]
+name = "browserinfocm_main"
+path = "src/main.rs"
+
+[lib]
+name = "browserinfocm"
+path = "src/lib.rs"
