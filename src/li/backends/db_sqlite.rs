@@ -65,6 +65,7 @@ fn data_dir_on_desktop() -> PathBuf {
     data_dir
 }
 
+#[cfg(feature = "backend_user_agent")]
 //#[cfg_attr(not(feature = "desktop"), server(input=cbor, output=cbor))]
 #[cfg_attr(not(feature = "desktop"), server)]
 pub async fn save_user_agent(ua: UserAgent) -> Result<()> {

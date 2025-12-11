@@ -1,5 +1,6 @@
 use anyhow::Result;
 use browserinfo::{broinfo_js, BroInfo, Browser};
+#[cfg(feature = "backend_user_agent")]
 use browserinfo::{user_agent_js, UserAgent};
 use dioxus::prelude::*;
 
@@ -23,13 +24,14 @@ pub fn BrowserInfoCm(mut props: BrowserInfoProps) -> Element {
 }
 
 pub async fn get_browserinfo() -> Result<(BroInfo, Browser)> {
-    let js_ua: &str = user_agent_js();
-    let v = document::eval(js_ua).await?;
-    let s = v.to_string();
-    let user_agent: UserAgent = serde_json::from_str(&s)?;
-    let _ = backends::save_user_agent(user_agent).await;
-    /*
-     */
+    #[cfg(feature = "backend_user_agent")]
+    {
+        let js_ua: &str = user_agent_js();
+        let v = document::eval(js_ua).await?;
+        let s = v.to_string();
+        let user_agent: UserAgent = serde_json::from_str(&s)?;
+        let _ = backends::save_user_agent(user_agent).await;
+    }
     //
     let js_bro: &str = broinfo_js();
     let v = document::eval(js_bro).await?;
@@ -40,4 +42,15 @@ pub async fn get_browserinfo() -> Result<(BroInfo, Browser)> {
         .await?
         .unwrap();
     Ok((broinfo, browser))
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_01() {
+        let s = broinfo_js();
+        assert_ne!(s, "");
+    }
 }

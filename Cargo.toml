@@ -1,6 +1,6 @@
 [package]
 name = "browserinfocm"
-version = "0.1.2"
+version = "0.1.3"
 authors = ["aki <aki.akaguma@hotmail.com>"]
 edition = "2021"
 description = """
@@ -14,7 +14,8 @@ rust-version = "1.90.0"
 repository = "https://github.com/aki-akaguma/broinfocm"
 
 [dependencies]
-browserinfo = "0.1.2"
+browserinfo = "0.1.3"
+#browserinfo = { path="../browserinfo" }
 
 dioxus = { version = "0.7.2", features = ["fullstack"] }
 dioxus-logger = "0.7.2"
@@ -50,6 +51,7 @@ database = ["dep:rusqlite", "dep:hmac-sha256", "dep:base64"]
 next_backend = ["dep:serde_cbor", "dep:reqwest"]
 backend_delay = ["dep:async-std"]
 backend_text = []
+backend_user_agent = []
 
 [[bin]]
 name = "browserinfocm_main"
