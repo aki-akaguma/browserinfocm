@@ -225,11 +225,13 @@ fn create_tables(conn: &rusqlite::Connection) -> rusqlite::Result<()> {
                 create_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 jsinfo_id INTEGER NOT NULL,
                 user_agent_id INTEGER NOT NULL,
-                referrer_id INTEGER NOT NULL
+                referrer_id INTEGER NOT NULL,
+                user_id INTEGER
         );
         CREATE INDEX IF NOT EXISTS Logs_jsinfo_id ON Logs (jsinfo_id);
         CREATE INDEX IF NOT EXISTS Logs_user_agent_id ON Logs (user_agent_id);
-        CREATE INDEX IF NOT EXISTS Logs_referrer_id ON Logs (referrer_id);",
+        CREATE INDEX IF NOT EXISTS Logs_referrer_id ON Logs (referrer_id);
+        CREATE INDEX IF NOT EXISTS Logs_user_id ON Logs (user_id);",
     )?;
     Ok(())
 }
