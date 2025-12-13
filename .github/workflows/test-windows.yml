@@ -21,6 +21,7 @@ jobs:
       matrix:
         rust: [beta, stable, 1.90.0]
         os: [windows-latest]
+        features: ["web", "server"]
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v3
@@ -28,4 +29,4 @@ jobs:
         with:
           toolchain: ${{matrix.rust}}
           components: rust-src
-      - run: cargo test
+      - run: cargo test --features ${{matrix.features}}

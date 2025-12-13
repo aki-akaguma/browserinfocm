@@ -298,3 +298,25 @@ fn create_jsinfo_hash(s: &str) -> String {
     let hash_base64_s = base64::engine::general_purpose::STANDARD_NO_PAD.encode(hash_bytes);
     hash_base64_s
 }
+
+#[cfg(any(feature = "server", feature = "desktop"))]
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_create_jsinfo_hash_00() {
+        let s0 = "";
+        let s = create_jsinfo_hash(s0);
+        assert_eq!(s.len(), 43);
+        assert_eq!(s, "47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU");
+    }
+
+    #[test]
+    fn test_create_jsinfo_hash_01() {
+        let s0 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        let s = create_jsinfo_hash(s0);
+        assert_eq!(s.len(), 43);
+        assert_eq!(s, "OWQpS2ZGE3mNGkd+uK0CEYtI0MVzjEJ2EyAvLtEjtfE");
+    }
+}
