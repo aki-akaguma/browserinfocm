@@ -2,12 +2,6 @@ use anyhow::Result;
 use browserinfo::{BroInfo, Browser};
 use dioxus::prelude::*;
 
-#[cfg(feature = "server")]
-use serde::{Deserialize, Serialize};
-
-#[cfg(feature = "server")]
-use std::time::Duration;
-
 #[cfg(feature = "backend_user_agent")]
 use browserinfo::UserAgent;
 
@@ -15,9 +9,18 @@ use browserinfo::UserAgent;
 use std::cell::RefCell;
 
 #[cfg(feature = "server")]
+use serde::{Deserialize, Serialize};
+
+#[cfg(feature = "server")]
+use std::time::Duration;
+
+#[cfg(feature = "server")]
+use dioxus::fullstack::reqwest;
+
+#[cfg(feature = "server")]
 thread_local! {
     pub static NEXT_URL: RefCell<String> = {
-        //let url = "http://hcc-desktop.local:8080";
+        //let url = "http://aki-desktop.local:8080";
         let url = match std::env::var("NEXT_URL") {
             Ok(val) => {
                 match val.strip_suffix("/") {

@@ -4,35 +4,28 @@ version = "0.1.3"
 authors = ["aki <aki.akaguma@hotmail.com>"]
 edition = "2021"
 description = """
-browser and hardware information.
+dioxus component that provides browser and hardware information
 """
 keywords = ["webapp", "javascript", "desktop", "android"]
 categories = ["web-programming"]
 license = "MIT OR Apache-2.0"
 readme = "README.md"
+build = "build.rs"
 rust-version = "1.90.0"
 repository = "https://github.com/aki-akaguma/broinfocm"
 
 [dependencies]
-browserinfo = "0.1.3"
+browserinfo = "0.1.4"
 #browserinfo = { path="../browserinfo" }
 
+anyhow = "1.0"
 dioxus = { version = "0.7.2", features = ["fullstack"] }
 dioxus-logger = "0.7.2"
-
-anyhow = "1.0"
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-serde_cbor = { version = "0.10", optional = true }
 toml = "0.9"
-ciborium = "0.2"
 
 async-std = { version="1.13", optional=true }
-reqwest = { version = "0.12", features = ["json"], optional=true }
-
 hmac-sha256 = { version="1.1", optional = true }
 base64 = { version="0.22", optional = true }
-
 
 [target.'cfg(target_os = "android")'.dependencies]
 openssl = { version = "0.10", features = ["vendored"] }
@@ -42,6 +35,11 @@ rusqlite = { version = "0.37", features = ["bundled"], optional = true }
 
 [target.'cfg(not(target_os = "windows"))'.dependencies]
 rusqlite = { version = "0.37", optional = true }
+
+
+[build-dependencies]
+rust-version-info-file = { version = "0.2", optional = true }
+
 
 [features]
 default = []
@@ -53,11 +51,13 @@ server = ["dioxus/server", "database"]
 
 database = ["dep:rusqlite", "dep:hmac-sha256", "dep:base64"]
 
-backend_homedir = ["database"]
-backend_next = ["dep:serde_cbor", "dep:reqwest"]
 backend_delay = ["dep:async-std"]
+backend_homedir = ["database"]
+backend_next = []
 backend_text = []
 backend_user_agent = []
+
+debian_build = ["desktop","dep:rust-version-info-file"]
 
 [[bin]]
 name = "browserinfocm_main"
@@ -66,3 +66,22 @@ path = "src/main.rs"
 [lib]
 name = "browserinfocm"
 path = "src/lib.rs"
+
+
+[package.metadata.deb]
+features = ["debian_build"]
+section = "AAA-webapp"
+priority = "optional"
+maintainer = "aki <aki.akaguma@hotmail.com>"
+extended-description = """\
+dioxus component that provides browser and hardware information
+"""
+depends = "$auto"
+separate-debug-symbols = true
+
+assets = [
+    ["target/release/browserinfocm_main", "usr/bin/browserinfocm_main", "755"],
+    ["target/rust-version-info.txt", "usr/share/doc/browserinfocm_main/", "644"],
+    ["README.md", "usr/share/doc/browserinfocm_main/", "644"],
+]
+

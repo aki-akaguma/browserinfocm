@@ -1,6 +1,4 @@
 use dioxus::prelude::*;
-#[cfg(all(not(debug_assertions), feature = "desktop"))]
-use dioxus_desktop::{Config, WindowBuilder};
 
 mod li;
 

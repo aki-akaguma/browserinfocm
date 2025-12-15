@@ -1,8 +1,9 @@
 use anyhow::Result;
 use browserinfo::{broinfo_js, BroInfo, Browser};
+use dioxus::prelude::*;
+
 #[cfg(feature = "backend_user_agent")]
 use browserinfo::{user_agent_js, UserAgent};
-use dioxus::prelude::*;
 
 mod backends;
 
@@ -33,14 +34,14 @@ pub async fn get_browserinfo() -> Result<(BroInfo, Browser)> {
         let js_ua: &str = user_agent_js();
         let v = document::eval(js_ua).await?;
         let s = v.to_string();
-        let user_agent: UserAgent = serde_json::from_str(&s)?;
+        let user_agent = UserAgent::from_json_str(&s)?;
         let _ = backends::save_user_agent(user_agent).await;
     }
     //
     let js_bro: &str = broinfo_js();
     let v = document::eval(js_bro).await?;
     let s = v.to_string();
-    let broinfo: BroInfo = serde_json::from_str(&s)?;
+    let broinfo = BroInfo::from_json_str(&s)?;
     //dioxus_logger::tracing::debug!("{s:?}");
     let browser = backends::save_broinfo(broinfo.clone(), true)
         .await?
