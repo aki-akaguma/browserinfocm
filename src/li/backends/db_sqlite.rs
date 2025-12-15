@@ -1,56 +1,55 @@
 use anyhow::Result;
-
-#[allow(unused_imports)]
-use std::path::PathBuf;
-
-#[allow(unused_imports)]
+use browserinfo::{BroInfo, Browser};
 use dioxus::prelude::*;
 
-#[allow(unused_imports)]
-use browserinfo::{BroInfo, Browser, UserAgent};
+#[cfg(feature = "backend_user_agent")]
+use browserinfo::UserAgent;
 
-#[allow(unused_imports)]
+#[cfg(feature = "server")]
 use std::cell::RefCell;
 
+#[cfg(feature = "server")]
+use std::path::PathBuf;
+
 // The database is only available to server code
-#[cfg(any(feature = "server", feature = "desktop"))]
+#[cfg(feature = "server")]
 thread_local! {
     pub static DB: RefCell<rusqlite::Connection> = {
-        let db_path = {
-            let mut data_dir = data_dir();
-            let db_file = "broinfo.db";
-            data_dir.push(db_file);
-            data_dir
-        };
-
+        let db_path = get_db_path_();
         // Open the database from the persisted "broinfo.db" file
         let conn = rusqlite::Connection::open(db_path).expect("Failed to open database");
-
         // Create tables if it doesn't already exist
         create_tables(&conn).unwrap();
-
         // Return the connection
         RefCell::new(conn)
     };
 }
 
-#[cfg(any(feature = "server", feature = "desktop"))]
+#[cfg(feature = "server")]
+fn get_db_path_() -> PathBuf {
+    let mut data_dir = data_dir();
+    let db_file = "broinfo.db";
+    data_dir.push(db_file);
+    data_dir
+}
+
+#[cfg(feature = "server")]
 fn data_dir() -> PathBuf {
-    #[allow(unused_assignments)]
-    let mut data_dir = PathBuf::from(".");
-    #[cfg(feature = "desktop")]
-    {
-        data_dir = data_dir_on_desktop();
-    }
-    #[cfg(feature = "server")]
+    let data_dir: PathBuf;
+    #[cfg(not(feature = "backend_homedir"))]
     {
         data_dir = PathBuf::from("/var/local/data/broinfo");
         let _ = std::fs::create_dir_all(&data_dir);
     }
+    #[cfg(feature = "backend_homedir")]
+    {
+        data_dir = data_dir_on_desktop();
+    }
     return data_dir;
 }
 
-#[cfg(feature = "desktop")]
+#[cfg(feature = "backend_homedir")]
+#[cfg(feature = "server")]
 fn data_dir_on_desktop() -> PathBuf {
     let mut data_dir = match std::env::home_dir() {
         Some(home) => home,
@@ -65,9 +64,32 @@ fn data_dir_on_desktop() -> PathBuf {
     data_dir
 }
 
+#[post("/api/v1/mikan1")]
+pub async fn get_db_path() -> Result<String> {
+    let db_path = get_db_path_();
+    let db_path_s = db_path.display().to_string();
+    dioxus_logger::tracing::debug!("db_path: {db_path_s:?}");
+    Ok(db_path_s)
+}
+
+#[post("/api/v1/ringo1", headers: dioxus::fullstack::HeaderMap)]
+pub async fn get_ipaddr() -> Result<String> {
+    let ipaddr = get_ipaddr_string(&headers);
+    dioxus_logger::tracing::debug!("ipaddr: {ipaddr:?}");
+    Ok(ipaddr)
+}
+
+#[cfg(feature = "server")]
+fn get_ipaddr_string(headers: &dioxus::fullstack::HeaderMap) -> String {
+    if let Some(s) = headers.get("x-forwarded-for") {
+        s.to_str().unwrap().to_string()
+    } else {
+        "".to_string()
+    }
+}
+
 #[cfg(feature = "backend_user_agent")]
-//#[cfg_attr(not(feature = "desktop"), server(input=cbor, output=cbor))]
-#[cfg_attr(not(feature = "desktop"), server)]
+#[post("/api/v1/useragent1")]
 pub async fn save_user_agent(ua: UserAgent) -> Result<()> {
     let ua_s = ua.get().trim_start_matches('"').trim_end_matches('"');
     //
@@ -93,9 +115,9 @@ pub async fn save_user_agent(ua: UserAgent) -> Result<()> {
     Ok(())
 }
 
-//#[cfg_attr(not(feature = "desktop"), server(input=cbor, output=cbor))]
-#[cfg_attr(not(feature = "desktop"), server)]
+#[post("/api/v1/browserinfo1", headers: dioxus::fullstack::HeaderMap)]
 pub async fn save_broinfo(broinfo: BroInfo, return_browser: bool) -> Result<Option<Browser>> {
+    let ipaddr = get_ipaddr_string(&headers);
     let user_agent = broinfo.basic.user_agent.clone();
     let referrer = broinfo.basic.referrer.clone();
 
@@ -126,10 +148,17 @@ pub async fn save_broinfo(broinfo: BroInfo, return_browser: bool) -> Result<Opti
             return Ok(());
         }
         //
-        tx.execute(
-            "INSERT INTO Logs (jsinfo_id, user_agent_id, referrer_id) VALUES (?1, ?2, ?3)",
-            &[&jsinfo_id, &user_agent_id, &referrer_id],
-        )?;
+        if ipaddr.is_empty() {
+            tx.execute(
+                "INSERT INTO Logs (jsinfo_id, user_agent_id, referrer_id) VALUES (?1, ?2, ?3)",
+                &[&jsinfo_id, &user_agent_id, &referrer_id],
+            )?;
+        } else {
+            tx.execute(
+                "INSERT INTO Logs (jsinfo_id, user_agent_id, referrer_id, ipaddr) VALUES (?1, ?2, ?3, ?4)",
+                rusqlite::params![&jsinfo_id, &user_agent_id, &referrer_id, &ipaddr],
+            )?;
+        }
         //
         tx.commit()
     })?;
@@ -147,7 +176,7 @@ pub async fn save_broinfo(broinfo: BroInfo, return_browser: bool) -> Result<Opti
 }
 
 #[cfg(feature = "backend_text")]
-#[allow(dead_code)]
+#[cfg(feature = "server")]
 fn write_backend_text(fnm: &str, data: &str) -> Result<()> {
     use std::io::Write;
     //
@@ -162,15 +191,15 @@ fn write_backend_text(fnm: &str, data: &str) -> Result<()> {
     Ok(())
 }
 
-#[allow(dead_code)]
 #[cfg(feature = "backend_delay")]
+#[cfg(feature = "server")]
 async fn sleep_x(millis: u64) -> Result<()> {
     async_std::task::sleep(std::time::Duration::from_millis(millis)).await;
     Ok(())
 }
 
 // Create tables if it doesn't already exist
-#[cfg(any(feature = "server", feature = "desktop"))]
+#[cfg(feature = "server")]
 fn create_tables(conn: &rusqlite::Connection) -> rusqlite::Result<()> {
     // table: `JsInfo`
     conn.execute_batch(
@@ -226,17 +255,20 @@ fn create_tables(conn: &rusqlite::Connection) -> rusqlite::Result<()> {
                 jsinfo_id INTEGER NOT NULL,
                 user_agent_id INTEGER NOT NULL,
                 referrer_id INTEGER NOT NULL,
+                ipaddr TEXT,
                 user_id INTEGER
         );
         CREATE INDEX IF NOT EXISTS Logs_jsinfo_id ON Logs (jsinfo_id);
         CREATE INDEX IF NOT EXISTS Logs_user_agent_id ON Logs (user_agent_id);
         CREATE INDEX IF NOT EXISTS Logs_referrer_id ON Logs (referrer_id);
-        CREATE INDEX IF NOT EXISTS Logs_user_id ON Logs (user_id);",
+        CREATE INDEX IF NOT EXISTS Logs_ipaddr ON Logs (ipaddr);
+        CREATE INDEX IF NOT EXISTS Logs_user_id ON Logs (user_id);
+        ",
     )?;
     Ok(())
 }
 
-#[cfg(any(feature = "server", feature = "desktop"))]
+#[cfg(feature = "server")]
 fn get_or_store_user_agent(tx: &rusqlite::Transaction, user_agent: &str) -> rusqlite::Result<i64> {
     let mut user_agent_id = 0;
     let r: rusqlite::Result<i64> = tx.query_one(
@@ -253,7 +285,7 @@ fn get_or_store_user_agent(tx: &rusqlite::Transaction, user_agent: &str) -> rusq
     Ok(user_agent_id)
 }
 
-#[cfg(any(feature = "server", feature = "desktop"))]
+#[cfg(feature = "server")]
 fn get_or_store_referrer(tx: &rusqlite::Transaction, referrer: &str) -> rusqlite::Result<i64> {
     let mut referrer_id = 0;
     let r: rusqlite::Result<i64> = tx.query_one(
@@ -270,7 +302,7 @@ fn get_or_store_referrer(tx: &rusqlite::Transaction, referrer: &str) -> rusqlite
     Ok(referrer_id)
 }
 
-#[cfg(any(feature = "server", feature = "desktop"))]
+#[cfg(feature = "server")]
 fn get_or_store_jsinfo(tx: &rusqlite::Transaction, info_s: &str) -> rusqlite::Result<i64> {
     let hash = create_jsinfo_hash(info_s);
     let hash_s = hash.as_str();
@@ -292,7 +324,7 @@ fn get_or_store_jsinfo(tx: &rusqlite::Transaction, info_s: &str) -> rusqlite::Re
     Ok(jsinfo_id)
 }
 
-#[cfg(any(feature = "server", feature = "desktop"))]
+#[cfg(feature = "server")]
 fn create_jsinfo_hash(s: &str) -> String {
     use base64::Engine;
 
@@ -301,7 +333,7 @@ fn create_jsinfo_hash(s: &str) -> String {
     hash_base64_s
 }
 
-#[cfg(any(feature = "server", feature = "desktop"))]
+#[cfg(feature = "server")]
 #[cfg(test)]
 mod test {
     use super::*;

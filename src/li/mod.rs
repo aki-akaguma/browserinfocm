@@ -6,6 +6,10 @@ use dioxus::prelude::*;
 
 mod backends;
 
+pub async fn get_db_path() -> String {
+    backends::get_db_path().await.unwrap()
+}
+
 #[derive(Props, Debug, Clone, PartialEq)]
 pub struct BrowserInfoProps {
     broinfo: Signal<BroInfo>,

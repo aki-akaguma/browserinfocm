@@ -1,21 +1,76 @@
 use anyhow::Result;
-use serde::{Deserialize, Serialize};
-
-#[allow(unused_imports)]
+use browserinfo::{BroInfo, Browser};
 use dioxus::prelude::*;
 
-#[allow(unused_imports)]
-use browserinfo::{BroInfo, Browser, UserAgent};
+#[cfg(feature = "server")]
+use serde::{Deserialize, Serialize};
 
-const NEXT_URL: &str = "http://hcc-desktop.local:8080";
-//const NEXT_URL: &str = "http://192.168.116.102:8080";
-//const NEXT_URL_API_TAG: &str = "2751944067970052790";
-const NEXT_URL_API_TAG: &str = "3771007982502153373";
+#[cfg(feature = "server")]
+use std::time::Duration;
 
-//#[cfg_attr(not(feature = "desktop"), server(input=cbor, output=cbor))]
-#[cfg_attr(not(feature = "desktop"), server(input=json, output=json))]
+#[cfg(feature = "backend_user_agent")]
+use browserinfo::UserAgent;
+
+#[cfg(feature = "server")]
+use std::cell::RefCell;
+
+#[cfg(feature = "server")]
+thread_local! {
+    pub static NEXT_URL: RefCell<String> = {
+        //let url = "http://hcc-desktop.local:8080";
+        let url = match std::env::var("NEXT_URL") {
+            Ok(val) => {
+                match val.strip_suffix("/") {
+                    Some(val2) => val2.to_string(),
+                    None => val.to_string(),
+                }
+            },
+            Err(_e) => "Not found env: NEXT_URL".to_string(),
+        };
+        RefCell::new(url)
+    };
+}
+
+#[post("/api/v1/mikan1")]
+pub async fn get_db_path() -> Result<String> {
+    let url_s = NEXT_URL.with_borrow(|f| format!("{f}/api/v1/mikan1"));
+
+    let client = reqwest::Client::builder()
+        .connect_timeout(Duration::from_millis(1000))
+        .build()?;
+    let resp = client
+        .post(&url_s)
+        .header("x-request-client", "dioxus")
+        .timeout(Duration::from_millis(5000))
+        .send()
+        .await?
+        .json::<String>()
+        .await?;
+    Ok(resp)
+}
+
+#[post("/api/v1/ringo1")]
+pub async fn get_ipaddr() -> Result<String> {
+    let url_s = NEXT_URL.with_borrow(|f| format!("{f}/api/v1/ringo1"));
+
+    let client = reqwest::Client::builder()
+        .connect_timeout(Duration::from_millis(1000))
+        .build()?;
+    let resp = client
+        .post(&url_s)
+        .header("x-request-client", "dioxus")
+        .timeout(Duration::from_millis(5000))
+        .send()
+        .await?
+        .json::<String>()
+        .await?;
+    Ok(resp)
+}
+
+#[cfg(feature = "backend_user_agent")]
+#[post("/api/v1/useragent1")]
 pub async fn save_user_agent(ua: UserAgent) -> Result<()> {
-    use std::time::Duration;
+    let url_s = NEXT_URL.with_borrow(|f| format!("{f}/api/v1/useragent1"));
 
     #[derive(Serialize, Deserialize, Debug, Default, Clone)]
     struct UserAgentProps {
@@ -27,7 +82,7 @@ pub async fn save_user_agent(ua: UserAgent) -> Result<()> {
         .connect_timeout(Duration::from_millis(1000))
         .build()?;
     let _res = client
-        .post(&format!("{NEXT_URL}/api/save_user_agent{NEXT_URL_API_TAG}"))
+        .post(&url_s)
         .header("x-request-client", "dioxus")
         .timeout(Duration::from_millis(5000))
         .json(&a_props)
@@ -37,10 +92,9 @@ pub async fn save_user_agent(ua: UserAgent) -> Result<()> {
     Ok(())
 }
 
-//#[cfg_attr(not(feature = "desktop"), server(input=cbor, output=cbor))]
-#[cfg_attr(not(feature = "desktop"), server(input=json, output=json))]
+#[post("/api/v1/browserinfo1")]
 pub async fn save_broinfo(broinfo: BroInfo, return_browser: bool) -> Result<Option<Browser>> {
-    use std::time::Duration;
+    let url_s = NEXT_URL.with_borrow(|f| format!("{f}/api/v1/browserinfo1"));
 
     #[derive(Serialize, Deserialize, Debug, Default, Clone)]
     struct BroInfoProps {
@@ -55,9 +109,8 @@ pub async fn save_broinfo(broinfo: BroInfo, return_browser: bool) -> Result<Opti
     let client = reqwest::Client::builder()
         .connect_timeout(Duration::from_millis(1000))
         .build()?;
-
     let resp = client
-        .post(&format!("{NEXT_URL}/api/save_broinfo{NEXT_URL_API_TAG}"))
+        .post(&url_s)
         .header("x-request-client", "dioxus")
         .timeout(Duration::from_millis(5000))
         .json(&a_props)

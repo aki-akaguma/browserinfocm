@@ -1,11 +1,11 @@
-#[cfg(not(feature = "next_backend"))]
+#[cfg(not(feature = "backend_next"))]
 mod db_sqlite;
-#[cfg(not(feature = "next_backend"))]
+#[cfg(not(feature = "backend_next"))]
 pub use db_sqlite::*;
 
-#[cfg(feature = "next_backend")]
+#[cfg(feature = "backend_next")]
 mod forwarder;
-#[cfg(feature = "next_backend")]
+#[cfg(feature = "backend_next")]
 pub use forwarder::*;
 
 /*

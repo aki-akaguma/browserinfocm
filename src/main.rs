@@ -36,6 +36,13 @@ fn MyStyle() -> Element {
 
 #[component]
 fn BroInfoHome() -> Element {
+    let mut db_path_sig = use_signal(String::new);
+    use_future(move || async move {
+        let s = li::get_db_path().await;
+        db_path_sig.set(s);
+    });
+    let db_path_s = format!("{:?}", db_path_sig.read().clone());
+
     let broinfo_sig = use_signal(BroInfo::default);
     let browser_sig = use_signal(Browser::default);
 
@@ -48,6 +55,9 @@ fn BroInfoHome() -> Element {
         BrowserInfoCm {
             broinfo: broinfo_sig,
             browser: browser_sig,
+        }
+        div {
+            "{db_path_s}"
         }
         div {
             "{brg_s}"
