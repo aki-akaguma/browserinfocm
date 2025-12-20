@@ -18,9 +18,13 @@ repository = "https://github.com/aki-akaguma/broinfocm"
 browserinfo = "0.1.4"
 #browserinfo = { path="../browserinfo" }
 
+dioxus = { git = "https://github.com/aki-akaguma/dioxus.git", package = "dioxus", branch = "patch", features = ["fullstack"] }
+dioxus-logger = { git = "https://github.com/aki-akaguma/dioxus.git", package = "dioxus-logger", branch = "patch" }
+
+#dioxus = { version = "0.7.2", features = ["fullstack"] }
+#dioxus-logger = "0.7.2"
+
 anyhow = "1.0"
-dioxus = { version = "0.7.2", features = ["fullstack"] }
-dioxus-logger = "0.7.2"
 toml = "0.9"
 
 async-std = { version="1.13", optional=true }
