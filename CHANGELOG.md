@@ -9,6 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 * depend dioxus to aki's github to fixed a bug of `base_path`
 
+### Fixed
+* the missing depend on `backend_next`
+
 
 ## [0.1.4] (2025-12-15)
 ### Changed
