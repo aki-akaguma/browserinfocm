@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+* `.danger_accept_invalid_certs(true)`
 * `brotli` on `backend_next`
 
 ### Changed

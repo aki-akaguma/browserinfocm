@@ -40,7 +40,7 @@ pub async fn get_db_path() -> Result<String> {
 
     let client = reqwest::Client::builder()
         .connect_timeout(Duration::from_millis(1000))
-        .brotli(true)
+        .danger_accept_invalid_certs(true)
         .build()?;
     let resp = client
         .post(&url_s)
@@ -59,7 +59,7 @@ pub async fn get_ipaddr() -> Result<String> {
 
     let client = reqwest::Client::builder()
         .connect_timeout(Duration::from_millis(1000))
-        .brotli(true)
+        .danger_accept_invalid_certs(true)
         .build()?;
     let resp = client
         .post(&url_s)
@@ -85,7 +85,7 @@ pub async fn save_user_agent(ua: UserAgent) -> Result<()> {
 
     let client = reqwest::Client::builder()
         .connect_timeout(Duration::from_millis(1000))
-        .brotli(true)
+        .danger_accept_invalid_certs(true)
         .build()?;
     let _res = client
         .post(&url_s)
@@ -114,7 +114,7 @@ pub async fn save_broinfo(broinfo: BroInfo, return_browser: bool) -> Result<Opti
 
     let client = reqwest::Client::builder()
         .connect_timeout(Duration::from_millis(1000))
-        .brotli(true)
+        .danger_accept_invalid_certs(true)
         .build()?;
     let resp = client
         .post(&url_s)
