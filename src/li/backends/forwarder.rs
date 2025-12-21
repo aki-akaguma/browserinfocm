@@ -15,6 +15,9 @@ use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
 #[cfg(feature = "server")]
+use reqwest;
+
+#[cfg(feature = "server")]
 thread_local! {
     pub static NEXT_URL: RefCell<String> = {
         //let url = "http://aki-desktop.local:8080";
@@ -37,6 +40,7 @@ pub async fn get_db_path() -> Result<String> {
 
     let client = reqwest::Client::builder()
         .connect_timeout(Duration::from_millis(1000))
+        .brotli(true)
         .build()?;
     let resp = client
         .post(&url_s)
@@ -55,6 +59,7 @@ pub async fn get_ipaddr() -> Result<String> {
 
     let client = reqwest::Client::builder()
         .connect_timeout(Duration::from_millis(1000))
+        .brotli(true)
         .build()?;
     let resp = client
         .post(&url_s)
@@ -80,6 +85,7 @@ pub async fn save_user_agent(ua: UserAgent) -> Result<()> {
 
     let client = reqwest::Client::builder()
         .connect_timeout(Duration::from_millis(1000))
+        .brotli(true)
         .build()?;
     let _res = client
         .post(&url_s)
@@ -108,6 +114,7 @@ pub async fn save_broinfo(broinfo: BroInfo, return_browser: bool) -> Result<Opti
 
     let client = reqwest::Client::builder()
         .connect_timeout(Duration::from_millis(1000))
+        .brotli(true)
         .build()?;
     let resp = client
         .post(&url_s)
