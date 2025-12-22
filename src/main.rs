@@ -16,6 +16,14 @@ fn main() {
     let level = dioxus_logger::tracing::Level::DEBUG;
     dioxus_logger::init(level).expect("failed to init logger");
 
+    #[cfg(not(debug_assertions))]
+    #[cfg(any(feature = "desktop", feature = "mobile"))]
+    {
+        let backend_url = "https://aki.omusubi.org/broinfo";
+        //let backend_url = "http://aki.omusubi.org/broinfo";
+        dioxus_fullstack::set_server_url(backend_url);
+    }
+
     dioxus::launch(App);
 }
 
