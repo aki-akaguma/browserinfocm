@@ -89,19 +89,27 @@ pub async fn get_db_path() -> Result<String> {
 }
 
 #[post("/api/v1/ringo1", headers: dioxus::fullstack::HeaderMap)]
-pub async fn get_ipaddr() -> Result<String> {
-    let ipaddr = get_ipaddr_string(&headers);
+pub async fn get_ipaddress() -> Result<String> {
+    let ipaddr = get_ipaddress_string(&headers);
     dioxus_logger::tracing::debug!("ipaddr: {ipaddr:?}");
     Ok(ipaddr)
 }
 
 #[cfg(feature = "server")]
-fn get_ipaddr_string(headers: &dioxus::fullstack::HeaderMap) -> String {
-    if let Some(s) = headers.get("x-forwarded-for") {
-        s.to_str().unwrap().to_string()
+pub fn get_ipaddress_string(headers: &dioxus::fullstack::HeaderMap) -> String {
+    let ip = if let Some(s) = headers.get("x-forwarded-for") {
+        // format:
+        //     X-Forwarded-For: client1, proxy1, proxy2, ...
+        let ss = s.to_str().unwrap();
+        if let Some(idx) = ss.find(',') {
+            ss[..idx].to_string()
+        } else {
+            ss.to_string()
+        }
     } else {
         "".to_string()
-    }
+    };
+    ip
 }
 
 #[cfg(feature = "backend_user_agent")]
@@ -133,7 +141,7 @@ pub async fn save_user_agent(ua: UserAgent) -> Result<()> {
 
 #[post("/api/v1/browserinfo1", headers: dioxus::fullstack::HeaderMap)]
 pub async fn save_broinfo(broinfo: BroInfo, return_browser: bool) -> Result<Option<Browser>> {
-    let ipaddress = get_ipaddr_string(&headers);
+    let ipaddress = get_ipaddress_string(&headers);
     let user_agent = broinfo.basic.user_agent.clone();
     let referrer = broinfo.basic.referrer.clone();
 
