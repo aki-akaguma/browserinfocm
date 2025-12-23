@@ -19,17 +19,10 @@ fn BroInfoHome() -> Element {
     let brg_s = format!("{:?}", brg);
     let bim_s = format!("{:?}", bim);
     rsx! {
-        BrowserInfoCm {
-            broinfo: broinfo_sig,
-            browser: browser_sig,
-        }
-        div {
-            "{brg_s}"
-        }
+        BrowserInfoCm { broinfo: broinfo_sig, browser: browser_sig }
+        div { "{brg_s}" }
         div {}
-        div {
-            "{bim_s}"
-        }
+        div { "{bim_s}" }
     }
 }
 ```
@@ -45,6 +38,11 @@ desktop = ["dioxus/desktop", "browserinfocm/desktop"]
 mobile = ["dioxus/mobile", "browserinfocm/mobile"]
 server = ["dioxus/server", "browserinfocm/server"]
 ```
+
+### Runtime Environment
++ `BROWSERINFOCM_DB_PATH`: ex.) `/var/local/data/broinfo/browserinfocm.db`
++ `BROWSERINFOCM_DB_BASE_PATH`:  ex.) `/var/local/mydata/broinfo`
++ `BROWSERINFOCM_DB_FILE`: ex.) `browserinfocm.db`
 */
 mod li;
 pub use browserinfo;

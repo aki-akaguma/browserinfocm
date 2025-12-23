@@ -20,7 +20,6 @@ fn main() {
     #[cfg(any(feature = "desktop", feature = "mobile"))]
     {
         let backend_url = "https://aki.omusubi.org/broinfo";
-        //let backend_url = "http://aki.omusubi.org/broinfo";
         dioxus_fullstack::set_server_url(backend_url);
     }
 
@@ -58,19 +57,10 @@ fn BroInfoHome() -> Element {
     let bim_s = format!("{:?}", bim);
 
     rsx! {
-        BrowserInfoCm {
-            broinfo: broinfo_sig,
-            browser: browser_sig,
-        }
-        div {
-            "{db_path_s}"
-        }
-        div {
-            "{brg_s}"
-        }
+        BrowserInfoCm { broinfo: broinfo_sig, browser: browser_sig }
+        div { "{db_path_s}" }
+        div { "{brg_s}" }
         div {}
-        div {
-            "{bim_s}"
-        }
+        div { "{bim_s}" }
     }
 }

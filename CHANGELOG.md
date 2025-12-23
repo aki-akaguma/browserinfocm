@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+* env::var() to backend db path: `BROWSERINFOCM_DB_PATH`
 * `brotli` on `backend_next`
 
 ### Changed

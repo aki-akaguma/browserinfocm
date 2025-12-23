@@ -27,8 +27,24 @@ thread_local! {
 
 #[cfg(feature = "server")]
 fn get_db_path_() -> PathBuf {
-    let mut data_dir = data_dir();
-    let db_file = "broinfo.db";
+    let key1 = "BROWSERINFOCM_DB_PATH";
+    if let Ok(s) = std::env::var(key1) {
+        return PathBuf::from(s);
+    }
+    let key2 = "BROWSERINFOCM_DB_BASE_PATH";
+    let mut data_dir = if let Ok(s) = std::env::var(key2) {
+        let pb = PathBuf::from(s);
+        let _ = std::fs::create_dir_all(&pb);
+        pb
+    } else {
+        data_dir()
+    };
+    let key3 = "BROWSERINFOCM_DB_FILE";
+    let db_file = if let Ok(s) = std::env::var(key3) {
+        s
+    } else {
+        "browserinfocm.db".to_string()
+    };
     data_dir.push(db_file);
     data_dir
 }
