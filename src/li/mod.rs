@@ -7,6 +7,9 @@ use browserinfo::{user_agent_js, UserAgent};
 
 mod backends;
 
+#[cfg(feature = "server")]
+pub use backends::get_ipaddress_string;
+
 pub async fn get_db_path() -> String {
     backends::get_db_path().await.unwrap()
 }
