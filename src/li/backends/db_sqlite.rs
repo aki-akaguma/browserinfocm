@@ -133,7 +133,7 @@ pub async fn save_user_agent(ua: UserAgent) -> Result<()> {
 
 #[post("/api/v1/browserinfo1", headers: dioxus::fullstack::HeaderMap)]
 pub async fn save_broinfo(broinfo: BroInfo, return_browser: bool) -> Result<Option<Browser>> {
-    let ipaddr = get_ipaddr_string(&headers);
+    let ipaddress = get_ipaddr_string(&headers);
     let user_agent = broinfo.basic.user_agent.clone();
     let referrer = broinfo.basic.referrer.clone();
 
@@ -158,23 +158,22 @@ pub async fn save_broinfo(broinfo: BroInfo, return_browser: bool) -> Result<Opti
             return Ok(());
         }
         //
+        let ipaddress_id = get_or_store_ipaddress(&tx, &ipaddress)?;
+        if ipaddress_id == 0 {
+            tx.rollback()?;
+            return Ok(());
+        }
+        //
         let jsinfo_id = get_or_store_jsinfo(&tx, &jsinfo_ss)?;
         if jsinfo_id == 0 {
             tx.rollback()?;
             return Ok(());
         }
         //
-        if ipaddr.is_empty() {
-            tx.execute(
-                "INSERT INTO Logs (jsinfo_id, user_agent_id, referrer_id) VALUES (?1, ?2, ?3)",
-                &[&jsinfo_id, &user_agent_id, &referrer_id],
-            )?;
-        } else {
-            tx.execute(
-                "INSERT INTO Logs (jsinfo_id, user_agent_id, referrer_id, ipaddr) VALUES (?1, ?2, ?3, ?4)",
-                rusqlite::params![&jsinfo_id, &user_agent_id, &referrer_id, &ipaddr],
-            )?;
-        }
+        tx.execute(
+            "INSERT INTO Logs (jsinfo_id, user_agent_id, referrer_id, ipaddress_id) VALUES (?1, ?2, ?3, ?4)",
+            rusqlite::params![&jsinfo_id, &user_agent_id, &referrer_id, &ipaddress_id],
+        )?;
         //
         tx.commit()
     })?;
@@ -263,6 +262,19 @@ fn create_tables(conn: &rusqlite::Connection) -> rusqlite::Result<()> {
         "INSERT INTO Referrer (value) SELECT * FROM (SELECT '') AS Referrer
             WHERE NOT EXISTS (SELECT * FROM Referrer WHERE value = '');",
     )?;
+    // table: `IpAddress`
+    conn.execute_batch(
+        "CREATE TABLE IF NOT EXISTS IpAddress (
+                id INTEGER PRIMARY KEY,
+                create_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                value TEXT NOT NULL
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS IpAddress_value ON IpAddress (value);",
+    )?;
+    conn.execute_batch(
+        "INSERT INTO IpAddress (value) SELECT * FROM (SELECT '') AS IpAddress
+            WHERE NOT EXISTS (SELECT * FROM IpAddress WHERE value = '');",
+    )?;
     // table: `Logs`
     conn.execute_batch(
         "CREATE TABLE IF NOT EXISTS Logs (
@@ -271,13 +283,13 @@ fn create_tables(conn: &rusqlite::Connection) -> rusqlite::Result<()> {
                 jsinfo_id INTEGER NOT NULL,
                 user_agent_id INTEGER NOT NULL,
                 referrer_id INTEGER NOT NULL,
-                ipaddr TEXT,
+                ipaddress_id INTEGER NOT NULL,
                 user_id INTEGER
         );
         CREATE INDEX IF NOT EXISTS Logs_jsinfo_id ON Logs (jsinfo_id);
         CREATE INDEX IF NOT EXISTS Logs_user_agent_id ON Logs (user_agent_id);
         CREATE INDEX IF NOT EXISTS Logs_referrer_id ON Logs (referrer_id);
-        CREATE INDEX IF NOT EXISTS Logs_ipaddr ON Logs (ipaddr);
+        CREATE INDEX IF NOT EXISTS Logs_ipaddress_id ON Logs (ipaddress_id);
         CREATE INDEX IF NOT EXISTS Logs_user_id ON Logs (user_id);
         ",
     )?;
@@ -316,6 +328,23 @@ fn get_or_store_referrer(tx: &rusqlite::Transaction, referrer: &str) -> rusqlite
         referrer_id = id;
     }
     Ok(referrer_id)
+}
+
+#[cfg(feature = "server")]
+fn get_or_store_ipaddress(tx: &rusqlite::Transaction, ipaddress: &str) -> rusqlite::Result<i64> {
+    let mut ipaddress_id = 0;
+    let r: rusqlite::Result<i64> = tx.query_one(
+        "SELECT id FROM IpAddress WHERE value = ?1",
+        &[ipaddress],
+        |row| row.get(0),
+    );
+    if let Err(rusqlite::Error::QueryReturnedNoRows) = r {
+        tx.execute("INSERT INTO IpAddress (value) VALUES (?1)", &[ipaddress])?;
+        ipaddress_id = tx.last_insert_rowid();
+    } else if let Ok(id) = r {
+        ipaddress_id = id;
+    }
+    Ok(ipaddress_id)
 }
 
 #[cfg(feature = "server")]
