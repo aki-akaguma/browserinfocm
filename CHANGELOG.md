@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * `brotli` on `backend_next`
 
 ### Changed
+* using `patch-crate`
 * depend dioxus to aki's github to fixed a bug of `base_path`
 
 ### Fixed

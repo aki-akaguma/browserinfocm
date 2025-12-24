@@ -8,6 +8,7 @@ use browserinfo::{user_agent_js, UserAgent};
 mod backends;
 
 #[cfg(feature = "server")]
+#[allow(unused_imports)]
 pub use backends::get_ipaddress_string;
 
 pub async fn get_db_path() -> String {

@@ -14,15 +14,21 @@ build = "build.rs"
 rust-version = "1.90.0"
 repository = "https://github.com/aki-akaguma/broinfocm"
 
+[package.metadata.patch]
+crates = ["dioxus-fullstack"]
+
+[patch.crates-io]
+dioxus-fullstack = { path = "i./target/patch/dioxus-fullstack-0.7.2" }
+
 [dependencies]
 browserinfo = "0.1.4"
 #browserinfo = { path="../browserinfo" }
 
-dioxus = { git = "https://github.com/aki-akaguma/dioxus.git", package = "dioxus", branch = "patch", features = ["fullstack"] }
-dioxus-logger = { git = "https://github.com/aki-akaguma/dioxus.git", package = "dioxus-logger", branch = "patch" }
+#dioxus = { git = "https://github.com/aki-akaguma/dioxus.git", package = "dioxus", branch = "patch", features = ["fullstack"] }
+#dioxus-logger = { git = "https://github.com/aki-akaguma/dioxus.git", package = "dioxus-logger", branch = "patch" }
 
-#dioxus = { version = "0.7.2", features = ["fullstack"] }
-#dioxus-logger = "0.7.2"
+dioxus = { version = "0.7.2", features = ["fullstack"] }
+dioxus-logger = "0.7.2"
 
 anyhow = "1.0"
 toml = "0.9"
@@ -42,9 +48,15 @@ rusqlite = { version = "0.37", features = ["bundled"], optional = true }
 [target.'cfg(not(target_os = "windows"))'.dependencies]
 rusqlite = { version = "0.37", optional = true }
 
+#[patch.crates-io]
+#dioxus = { git = "https://github.com/aki-akaguma/dioxus.git", package = "dioxus", branch = "patch" }
+#dioxus-fullstack = { git = "https://github.com/aki-akaguma/dioxus.git", package = "dioxus-fullstack", branch = "patch" }
+#dioxus-server = { git = "https://github.com/aki-akaguma/dioxus.git", package = "dioxus-server", branch = "patch" }
+
 
 [build-dependencies]
 rust-version-info-file = { version = "0.2", optional = true }
+patch-crate = "0.1"
 
 
 [features]
