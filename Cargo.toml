@@ -18,7 +18,7 @@ repository = "https://github.com/aki-akaguma/broinfocm"
 crates = ["dioxus-fullstack"]
 
 [patch.crates-io]
-dioxus-fullstack = { path = "i./target/patch/dioxus-fullstack-0.7.2" }
+dioxus-fullstack = { path = "./target/patch/dioxus-fullstack-0.7.2" }
 
 [dependencies]
 browserinfo = "0.1.4"
