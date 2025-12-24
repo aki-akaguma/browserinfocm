@@ -1,10 +1,12 @@
 // build.rs
 
 fn main() {
+    /*
     {
         println!("cargo:rerun-if-changed=Cargo.toml");
-        patch_crate::run().expect("Failed while patching");
+        patch_crate_aki::run().expect("Failed while patching");
     }
+    */
     #[cfg(feature = "debian_build")]
     {
         use rust_version_info_file::rust_version_info_file;

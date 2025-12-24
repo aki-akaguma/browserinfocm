@@ -7,12 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+* `patched` by using `patch-crate`
 * the `IpAddress` table into db
 * env::var() to backend db path: `BROWSERINFOCM_DB_PATH`
 * `brotli` on `backend_next`
 
 ### Changed
-* using `patch-crate`
 * depend dioxus to aki's github to fixed a bug of `base_path`
 
 ### Fixed
