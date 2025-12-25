@@ -11,6 +11,9 @@ use std::cell::RefCell;
 #[cfg(feature = "server")]
 use std::path::PathBuf;
 
+#[cfg(feature = "server")]
+use super::get_ipaddress_string;
+
 // The database is only available to server code
 #[cfg(feature = "server")]
 thread_local! {
@@ -93,23 +96,6 @@ pub async fn get_ipaddress() -> Result<String> {
     let ipaddr = get_ipaddress_string(&headers);
     dioxus_logger::tracing::debug!("ipaddr: {ipaddr:?}");
     Ok(ipaddr)
-}
-
-#[cfg(feature = "server")]
-pub fn get_ipaddress_string(headers: &dioxus::fullstack::HeaderMap) -> String {
-    let ip = if let Some(s) = headers.get("x-forwarded-for") {
-        // format:
-        //     X-Forwarded-For: client1, proxy1, proxy2, ...
-        let ss = s.to_str().unwrap();
-        if let Some(idx) = ss.find(',') {
-            ss[..idx].to_string()
-        } else {
-            ss.to_string()
-        }
-    } else {
-        "".to_string()
-    };
-    ip
 }
 
 #[cfg(feature = "backend_user_agent")]
