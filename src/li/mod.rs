@@ -11,8 +11,8 @@ mod backends;
 #[allow(unused_imports)]
 pub use backends::get_ipaddress_string;
 
-pub async fn get_db_path() -> String {
-    backends::get_db_path().await.unwrap()
+pub async fn get_db_path() -> Result<String> {
+    backends::get_db_path().await
 }
 
 #[derive(Props, Debug, Clone, PartialEq)]

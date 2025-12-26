@@ -44,7 +44,7 @@ fn BroInfoHome() -> Element {
     let mut db_path_sig = use_signal(String::new);
     use_future(move || async move {
         let s = li::get_db_path().await;
-        db_path_sig.set(s);
+        db_path_sig.set(s.unwrap());
     });
     let db_path_s = format!("{:?}", db_path_sig.read().clone());
 
