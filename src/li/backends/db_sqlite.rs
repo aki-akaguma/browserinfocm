@@ -126,7 +126,11 @@ pub async fn save_user_agent(ua: UserAgent) -> Result<()> {
 }
 
 #[post("/api/v1/browserinfo1", headers: dioxus::fullstack::HeaderMap)]
-pub async fn save_broinfo(broinfo: BroInfo, return_browser: bool) -> Result<Option<Browser>> {
+pub async fn save_broinfo(
+    broinfo: BroInfo,
+    user: String,
+    return_browser: bool,
+) -> Result<Option<Browser>> {
     let ipaddress = get_ipaddress_string(&headers);
     let user_agent = broinfo.basic.user_agent.clone();
     let referrer = broinfo.basic.referrer.clone();
@@ -158,6 +162,12 @@ pub async fn save_broinfo(broinfo: BroInfo, return_browser: bool) -> Result<Opti
             return Ok(());
         }
         //
+        let user_id = get_or_store_user(&tx, &user)?;
+        if user_id == 0 {
+            tx.rollback()?;
+            return Ok(());
+        }
+        //
         let jsinfo_id = get_or_store_jsinfo(&tx, &jsinfo_ss)?;
         if jsinfo_id == 0 {
             tx.rollback()?;
@@ -165,8 +175,8 @@ pub async fn save_broinfo(broinfo: BroInfo, return_browser: bool) -> Result<Opti
         }
         //
         tx.execute(
-            "INSERT INTO Logs (jsinfo_id, user_agent_id, referrer_id, ipaddress_id) VALUES (?1, ?2, ?3, ?4)",
-            rusqlite::params![&jsinfo_id, &user_agent_id, &referrer_id, &ipaddress_id],
+            "INSERT INTO Logs (jsinfo_id, user_agent_id, referrer_id, ipaddress_id, user_id) VALUES (?1, ?2, ?3, ?4, ?5)",
+            rusqlite::params![&jsinfo_id, &user_agent_id, &referrer_id, &ipaddress_id, &user_id],
         )?;
         //
         tx.commit()
@@ -269,6 +279,19 @@ fn create_tables(conn: &rusqlite::Connection) -> rusqlite::Result<()> {
         "INSERT INTO IpAddress (value) SELECT * FROM (SELECT '') AS IpAddress
             WHERE NOT EXISTS (SELECT * FROM IpAddress WHERE value = '');",
     )?;
+    // table: `User`
+    conn.execute_batch(
+        "CREATE TABLE IF NOT EXISTS User (
+                id INTEGER PRIMARY KEY,
+                create_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                value TEXT NOT NULL
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS User_value ON User (value);",
+    )?;
+    conn.execute_batch(
+        "INSERT INTO User (value) SELECT * FROM (SELECT '') AS User
+            WHERE NOT EXISTS (SELECT * FROM User WHERE value = '');",
+    )?;
     // table: `Logs`
     conn.execute_batch(
         "CREATE TABLE IF NOT EXISTS Logs (
@@ -278,7 +301,7 @@ fn create_tables(conn: &rusqlite::Connection) -> rusqlite::Result<()> {
                 user_agent_id INTEGER NOT NULL,
                 referrer_id INTEGER NOT NULL,
                 ipaddress_id INTEGER NOT NULL,
-                user_id INTEGER
+                user_id INTEGER NOT NULL
         );
         CREATE INDEX IF NOT EXISTS Logs_jsinfo_id ON Logs (jsinfo_id);
         CREATE INDEX IF NOT EXISTS Logs_user_agent_id ON Logs (user_agent_id);
@@ -339,6 +362,22 @@ fn get_or_store_ipaddress(tx: &rusqlite::Transaction, ipaddress: &str) -> rusqli
         ipaddress_id = id;
     }
     Ok(ipaddress_id)
+}
+
+#[cfg(feature = "server")]
+fn get_or_store_user(tx: &rusqlite::Transaction, user: &str) -> rusqlite::Result<i64> {
+    let mut user_id = 0;
+    let r: rusqlite::Result<i64> =
+        tx.query_one("SELECT id FROM User WHERE value = ?1", &[user], |row| {
+            row.get(0)
+        });
+    if let Err(rusqlite::Error::QueryReturnedNoRows) = r {
+        tx.execute("INSERT INTO User (value) VALUES (?1)", &[user])?;
+        user_id = tx.last_insert_rowid();
+    } else if let Ok(id) = r {
+        user_id = id;
+    }
+    Ok(user_id)
 }
 
 #[cfg(feature = "server")]

@@ -11,20 +11,17 @@ mod backends;
 #[allow(unused_imports)]
 pub use backends::get_ipaddress_string;
 
-pub async fn get_db_path() -> Result<String> {
-    backends::get_db_path().await
-}
-
 #[derive(Props, Debug, Clone, PartialEq)]
 pub struct BrowserInfoProps {
     broinfo: Signal<BroInfo>,
     browser: Signal<Browser>,
+    user: Signal<String>,
 }
 
 #[component]
 pub fn BrowserInfoCm(mut props: BrowserInfoProps) -> Element {
     use_future(move || async move {
-        let (broinfo, browser) = get_browserinfo().await.unwrap();
+        let (broinfo, browser) = get_browserinfo((props.user)()).await.unwrap();
         props.broinfo.set(broinfo);
         props.browser.set(browser);
     });
@@ -32,7 +29,7 @@ pub fn BrowserInfoCm(mut props: BrowserInfoProps) -> Element {
     rsx! {}
 }
 
-pub async fn get_browserinfo() -> Result<(BroInfo, Browser)> {
+pub async fn get_browserinfo(user: String) -> Result<(BroInfo, Browser)> {
     #[cfg(feature = "backend_user_agent")]
     {
         let js_ua: &str = user_agent_js();
@@ -47,10 +44,14 @@ pub async fn get_browserinfo() -> Result<(BroInfo, Browser)> {
     let s = v.to_string();
     let broinfo = BroInfo::from_json_str(&s)?;
     //dioxus_logger::tracing::debug!("{s:?}");
-    let browser = backends::save_broinfo(broinfo.clone(), true)
+    let browser = backends::save_broinfo(broinfo.clone(), user, true)
         .await?
         .unwrap();
     Ok((broinfo, browser))
+}
+
+pub async fn get_db_path() -> Result<String> {
+    backends::get_db_path().await
 }
 
 #[cfg(test)]
