@@ -70,13 +70,13 @@ fn get_or_create_bicmid() -> String {
         .local_storage()
         .expect("localStorage error")
         .expect("localStorage not available");
-    if let Ok(Some(uuid_s)) = storage.get_item("anon_uuid") {
+    if let Ok(Some(uuid_s)) = storage.get_item("anon_bicmid") {
         uuid_s
     } else {
         // generate a uuid (128bits:16byte)
         let uuid = uuid::Uuid::new_v4();
         let uuid_s = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(uuid.as_bytes());
-        storage.set_item("anon_uuid", &uuid_s).unwrap();
+        storage.set_item("anon_bicmid", &uuid_s).unwrap();
         uuid_s
     }
 }
