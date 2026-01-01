@@ -64,7 +64,12 @@ fn BroInfoHome() -> Element {
     let user_s = format!("{:?}", user);
 
     rsx! {
-        BrowserInfoCm { broinfo: broinfo_sig, browser: browser_sig, bicmid: bicmid_sig, user: user_sig }
+        BrowserInfoCm {
+            broinfo: broinfo_sig,
+            browser: browser_sig,
+            bicmid: bicmid_sig,
+            user: user_sig,
+        }
         div { "{db_path_s}" }
         div { "{brg_s}" }
         div {}
