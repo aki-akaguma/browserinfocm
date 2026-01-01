@@ -96,16 +96,25 @@ pub async fn save_user_agent(ua: UserAgent) -> Result<()> {
 }
 
 #[post("/api/v1/browserinfo1")]
-pub async fn save_broinfo(broinfo: BroInfo, return_browser: bool) -> Result<Option<Browser>> {
+pub async fn save_broinfo(
+    broinfo: BroInfo,
+    bicmid: String,
+    user: String,
+    return_browser: bool,
+) -> Result<Option<Browser>> {
     let url_s = NEXT_URL.with_borrow(|f| format!("{f}/api/v1/browserinfo1"));
 
     #[derive(Serialize, Deserialize, Debug, Default, Clone)]
     struct BroInfoProps {
         pub broinfo: BroInfo,
+        pub bicmid: String,
+        pub user: String,
         pub return_browser: bool,
     }
     let a_props = BroInfoProps {
         broinfo,
+        bicmid,
+        user,
         return_browser,
     };
 

@@ -31,10 +31,14 @@ dioxus-logger = "0.7.2"
 anyhow = "1.0"
 toml = "0.9"
 serde = { version = "1.0", features = ["derive"] }
+base64 = "0.22"
+uuid = { version = "1.19", features = ["v4", "js"] }
+wasm-bindgen = "0.2"
+web-sys = { version = "0.3", features = ["Window", "Storage"] }
 
 async-std = { version="1.13", optional=true }
 hmac-sha256 = { version="1.1", optional = true }
-base64 = { version="0.22", optional = true }
+#base64 = { version="0.22", optional = true }
 reqwest = { version = "0.12", features = ["json"], optional=true }
 
 [target.'cfg(target_os = "android")'.dependencies]
@@ -59,7 +63,7 @@ desktop = ["dioxus/desktop", "backend_homedir"]
 mobile = ["dioxus/mobile"]
 server = ["dioxus/server", "database"]
 
-database = ["dep:rusqlite", "dep:hmac-sha256", "dep:base64"]
+database = ["dep:rusqlite", "dep:hmac-sha256"]
 
 backend_delay = ["dep:async-std"]
 backend_homedir = ["database"]

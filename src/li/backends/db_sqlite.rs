@@ -128,6 +128,7 @@ pub async fn save_user_agent(ua: UserAgent) -> Result<()> {
 #[post("/api/v1/browserinfo1", headers: dioxus::fullstack::HeaderMap)]
 pub async fn save_broinfo(
     broinfo: BroInfo,
+    bicmid: String,
     user: String,
     return_browser: bool,
 ) -> Result<Option<Browser>> {
@@ -162,6 +163,12 @@ pub async fn save_broinfo(
             return Ok(());
         }
         //
+        let bicmid_id = get_or_store_bicmid(&tx, &bicmid)?;
+        if bicmid_id == 0 {
+            tx.rollback()?;
+            return Ok(());
+        }
+        //
         let user_id = get_or_store_user(&tx, &user)?;
         if user_id == 0 {
             tx.rollback()?;
@@ -175,8 +182,8 @@ pub async fn save_broinfo(
         }
         //
         tx.execute(
-            "INSERT INTO Logs (jsinfo_id, user_agent_id, referrer_id, ipaddress_id, user_id) VALUES (?1, ?2, ?3, ?4, ?5)",
-            rusqlite::params![&jsinfo_id, &user_agent_id, &referrer_id, &ipaddress_id, &user_id],
+            "INSERT INTO Logs (jsinfo_id, user_agent_id, referrer_id, ipaddress_id, bicmid_id, user_id) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            rusqlite::params![&jsinfo_id, &user_agent_id, &referrer_id, &ipaddress_id, &bicmid_id, &user_id],
         )?;
         //
         tx.commit()
@@ -279,6 +286,19 @@ fn create_tables(conn: &rusqlite::Connection) -> rusqlite::Result<()> {
         "INSERT INTO IpAddress (value) SELECT * FROM (SELECT '') AS IpAddress
             WHERE NOT EXISTS (SELECT * FROM IpAddress WHERE value = '');",
     )?;
+    // table: `Bicmid`
+    conn.execute_batch(
+        "CREATE TABLE IF NOT EXISTS Bicmid (
+                id INTEGER PRIMARY KEY,
+                create_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                value TEXT NOT NULL
+        );
+        CREATE UNIQUE INDEX IF NOT EXISTS Bicmid_value ON Bicmid (value);",
+    )?;
+    conn.execute_batch(
+        "INSERT INTO Bicmid (value) SELECT * FROM (SELECT '') AS Bicmid
+            WHERE NOT EXISTS (SELECT * FROM Bicmid WHERE value = '');",
+    )?;
     // table: `User`
     conn.execute_batch(
         "CREATE TABLE IF NOT EXISTS User (
@@ -301,12 +321,14 @@ fn create_tables(conn: &rusqlite::Connection) -> rusqlite::Result<()> {
                 user_agent_id INTEGER NOT NULL,
                 referrer_id INTEGER NOT NULL,
                 ipaddress_id INTEGER NOT NULL,
+                bicmid_id INTEGER NOT NULL,
                 user_id INTEGER NOT NULL
         );
         CREATE INDEX IF NOT EXISTS Logs_jsinfo_id ON Logs (jsinfo_id);
         CREATE INDEX IF NOT EXISTS Logs_user_agent_id ON Logs (user_agent_id);
         CREATE INDEX IF NOT EXISTS Logs_referrer_id ON Logs (referrer_id);
         CREATE INDEX IF NOT EXISTS Logs_ipaddress_id ON Logs (ipaddress_id);
+        CREATE INDEX IF NOT EXISTS Logs_bicmid_id ON Logs (bicmid_id);
         CREATE INDEX IF NOT EXISTS Logs_user_id ON Logs (user_id);
         ",
     )?;
@@ -362,6 +384,22 @@ fn get_or_store_ipaddress(tx: &rusqlite::Transaction, ipaddress: &str) -> rusqli
         ipaddress_id = id;
     }
     Ok(ipaddress_id)
+}
+
+#[cfg(feature = "server")]
+fn get_or_store_bicmid(tx: &rusqlite::Transaction, bicmid: &str) -> rusqlite::Result<i64> {
+    let mut bicmid_id = 0;
+    let r: rusqlite::Result<i64> =
+        tx.query_one("SELECT id FROM Bicmid WHERE value = ?1", &[bicmid], |row| {
+            row.get(0)
+        });
+    if let Err(rusqlite::Error::QueryReturnedNoRows) = r {
+        tx.execute("INSERT INTO Bicmid (value) VALUES (?1)", &[bicmid])?;
+        bicmid_id = tx.last_insert_rowid();
+    } else if let Ok(id) = r {
+        bicmid_id = id;
+    }
+    Ok(bicmid_id)
 }
 
 #[cfg(feature = "server")]
