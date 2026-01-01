@@ -110,7 +110,7 @@ pub async fn save_user_agent(ua: UserAgent) -> Result<()> {
         let tx = f.transaction()?;
         //
         let user_agent_id = get_or_store_user_agent(&tx, &ua_s)?;
-        if user_agent_id == 0 {
+        if user_agent_id == -1 {
             tx.rollback()?;
             return Ok(());
         }
@@ -146,37 +146,37 @@ pub async fn save_broinfo(
         let tx = f.transaction()?;
         //
         let user_agent_id = get_or_store_user_agent(&tx, user_agent.get())?;
-        if user_agent_id == 0 {
+        if user_agent_id == -1 {
             tx.rollback()?;
             return Ok(());
         }
         //
         let referrer_id = get_or_store_referrer(&tx, referrer.get())?;
-        if referrer_id == 0 {
+        if referrer_id == -1 {
             tx.rollback()?;
             return Ok(());
         }
         //
         let ipaddress_id = get_or_store_ipaddress(&tx, &ipaddress)?;
-        if ipaddress_id == 0 {
+        if ipaddress_id == -1 {
             tx.rollback()?;
             return Ok(());
         }
         //
         let bicmid_id = get_or_store_bicmid(&tx, &bicmid)?;
-        if bicmid_id == 0 {
+        if bicmid_id == -1 {
             tx.rollback()?;
             return Ok(());
         }
         //
         let user_id = get_or_store_user(&tx, &user)?;
-        if user_id == 0 {
+        if user_id == -1 {
             tx.rollback()?;
             return Ok(());
         }
         //
         let jsinfo_id = get_or_store_jsinfo(&tx, &jsinfo_ss)?;
-        if jsinfo_id == 0 {
+        if jsinfo_id == -1 {
             tx.rollback()?;
             return Ok(());
         }
@@ -230,7 +230,7 @@ fn create_tables(conn: &rusqlite::Connection) -> rusqlite::Result<()> {
     // table: `JsInfo`
     conn.execute_batch(
         "CREATE TABLE IF NOT EXISTS JsInfo (
-                id INTEGER PRIMARY KEY,
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
                 create_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 hash TEXT NOT NULL,
                 value TEXT NOT NULL
@@ -242,80 +242,80 @@ fn create_tables(conn: &rusqlite::Connection) -> rusqlite::Result<()> {
         let hash = create_jsinfo_hash(s);
         let hash_s = hash.as_str();
         conn.execute(
-            "INSERT INTO JsInfo (hash, value) SELECT * FROM (SELECT ?1, ?2) AS JsInfo
-                WHERE NOT EXISTS (SELECT * FROM JsInfo WHERE hash = ?1 AND value = ?2);",
+            "INSERT INTO JsInfo (id, hash, value) SELECT * FROM (SELECT 0, ?1, ?2) AS JsInfo
+                WHERE NOT EXISTS (SELECT * FROM JsInfo WHERE id = 0);",
             &[hash_s, s],
         )?;
     }
     // table: `UserAgent`
     conn.execute_batch(
         "CREATE TABLE IF NOT EXISTS UserAgent (
-                id INTEGER PRIMARY KEY,
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
                 create_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 value TEXT NOT NULL
         );
         CREATE UNIQUE INDEX IF NOT EXISTS UserAgent_value ON UserAgent (value);",
     )?;
     conn.execute_batch(
-        "INSERT INTO UserAgent (value) SELECT * FROM (SELECT '') AS UserAgent
-            WHERE NOT EXISTS (SELECT * FROM UserAgent WHERE value = '');",
+        "INSERT INTO UserAgent (id, value) SELECT * FROM (SELECT 0, '') AS UserAgent
+            WHERE NOT EXISTS (SELECT * FROM UserAgent WHERE id = 0);",
     )?;
     // table: `Referrer`
     conn.execute_batch(
         "CREATE TABLE IF NOT EXISTS Referrer (
-                id INTEGER PRIMARY KEY,
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
                 create_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 value TEXT NOT NULL
         );
         CREATE UNIQUE INDEX IF NOT EXISTS Referrer_value ON Referrer (value);",
     )?;
     conn.execute_batch(
-        "INSERT INTO Referrer (value) SELECT * FROM (SELECT '') AS Referrer
-            WHERE NOT EXISTS (SELECT * FROM Referrer WHERE value = '');",
+        "INSERT INTO Referrer (id, value) SELECT * FROM (SELECT 0, '') AS Referrer
+            WHERE NOT EXISTS (SELECT * FROM Referrer WHERE id = 0);",
     )?;
     // table: `IpAddress`
     conn.execute_batch(
         "CREATE TABLE IF NOT EXISTS IpAddress (
-                id INTEGER PRIMARY KEY,
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
                 create_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 value TEXT NOT NULL
         );
         CREATE UNIQUE INDEX IF NOT EXISTS IpAddress_value ON IpAddress (value);",
     )?;
     conn.execute_batch(
-        "INSERT INTO IpAddress (value) SELECT * FROM (SELECT '') AS IpAddress
-            WHERE NOT EXISTS (SELECT * FROM IpAddress WHERE value = '');",
+        "INSERT INTO IpAddress (id, value) SELECT * FROM (SELECT 0, '') AS IpAddress
+            WHERE NOT EXISTS (SELECT * FROM IpAddress WHERE id = 0);",
     )?;
     // table: `Bicmid`
     conn.execute_batch(
         "CREATE TABLE IF NOT EXISTS Bicmid (
-                id INTEGER PRIMARY KEY,
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
                 create_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 value TEXT NOT NULL
         );
         CREATE UNIQUE INDEX IF NOT EXISTS Bicmid_value ON Bicmid (value);",
     )?;
     conn.execute_batch(
-        "INSERT INTO Bicmid (value) SELECT * FROM (SELECT '') AS Bicmid
-            WHERE NOT EXISTS (SELECT * FROM Bicmid WHERE value = '');",
+        "INSERT INTO Bicmid (id, value) SELECT * FROM (SELECT 0, '') AS Bicmid
+            WHERE NOT EXISTS (SELECT * FROM Bicmid WHERE id = 0);",
     )?;
     // table: `User`
     conn.execute_batch(
         "CREATE TABLE IF NOT EXISTS User (
-                id INTEGER PRIMARY KEY,
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
                 create_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 value TEXT NOT NULL
         );
         CREATE UNIQUE INDEX IF NOT EXISTS User_value ON User (value);",
     )?;
     conn.execute_batch(
-        "INSERT INTO User (value) SELECT * FROM (SELECT '') AS User
-            WHERE NOT EXISTS (SELECT * FROM User WHERE value = '');",
+        "INSERT INTO User (id, value) SELECT * FROM (SELECT 0, '') AS User
+            WHERE NOT EXISTS (SELECT * FROM User WHERE id = 0);",
     )?;
     // table: `Log`
     conn.execute_batch(
         "CREATE TABLE IF NOT EXISTS Log (
-                id INTEGER PRIMARY KEY,
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
                 create_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 jsinfo_id INTEGER NOT NULL,
                 user_agent_id INTEGER NOT NULL,
@@ -337,7 +337,7 @@ fn create_tables(conn: &rusqlite::Connection) -> rusqlite::Result<()> {
 
 #[cfg(feature = "server")]
 fn get_or_store_user_agent(tx: &rusqlite::Transaction, user_agent: &str) -> rusqlite::Result<i64> {
-    let mut user_agent_id = 0;
+    let mut user_agent_id = -1;
     let r: rusqlite::Result<i64> = tx.query_one(
         "SELECT id FROM UserAgent WHERE value = ?1",
         &[user_agent],
@@ -354,7 +354,7 @@ fn get_or_store_user_agent(tx: &rusqlite::Transaction, user_agent: &str) -> rusq
 
 #[cfg(feature = "server")]
 fn get_or_store_referrer(tx: &rusqlite::Transaction, referrer: &str) -> rusqlite::Result<i64> {
-    let mut referrer_id = 0;
+    let mut referrer_id = -1;
     let r: rusqlite::Result<i64> = tx.query_one(
         "SELECT id FROM Referrer WHERE value = ?1",
         &[referrer],
@@ -371,7 +371,7 @@ fn get_or_store_referrer(tx: &rusqlite::Transaction, referrer: &str) -> rusqlite
 
 #[cfg(feature = "server")]
 fn get_or_store_ipaddress(tx: &rusqlite::Transaction, ipaddress: &str) -> rusqlite::Result<i64> {
-    let mut ipaddress_id = 0;
+    let mut ipaddress_id = -1;
     let r: rusqlite::Result<i64> = tx.query_one(
         "SELECT id FROM IpAddress WHERE value = ?1",
         &[ipaddress],
@@ -388,7 +388,7 @@ fn get_or_store_ipaddress(tx: &rusqlite::Transaction, ipaddress: &str) -> rusqli
 
 #[cfg(feature = "server")]
 fn get_or_store_bicmid(tx: &rusqlite::Transaction, bicmid: &str) -> rusqlite::Result<i64> {
-    let mut bicmid_id = 0;
+    let mut bicmid_id = -1;
     let r: rusqlite::Result<i64> =
         tx.query_one("SELECT id FROM Bicmid WHERE value = ?1", &[bicmid], |row| {
             row.get(0)
@@ -404,7 +404,7 @@ fn get_or_store_bicmid(tx: &rusqlite::Transaction, bicmid: &str) -> rusqlite::Re
 
 #[cfg(feature = "server")]
 fn get_or_store_user(tx: &rusqlite::Transaction, user: &str) -> rusqlite::Result<i64> {
-    let mut user_id = 0;
+    let mut user_id = -1;
     let r: rusqlite::Result<i64> =
         tx.query_one("SELECT id FROM User WHERE value = ?1", &[user], |row| {
             row.get(0)
@@ -422,7 +422,7 @@ fn get_or_store_user(tx: &rusqlite::Transaction, user: &str) -> rusqlite::Result
 fn get_or_store_jsinfo(tx: &rusqlite::Transaction, info_s: &str) -> rusqlite::Result<i64> {
     let hash = create_jsinfo_hash(info_s);
     let hash_s = hash.as_str();
-    let mut jsinfo_id = 0;
+    let mut jsinfo_id = -1;
     let r: rusqlite::Result<i64> = tx.query_one(
         "SELECT id FROM JsInfo WHERE hash = ?1 AND value = ?2",
         &[hash_s, info_s],

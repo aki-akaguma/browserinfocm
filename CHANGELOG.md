@@ -6,13 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+* the `Bicmid` table into databse
+* `bicmid` on browser's local strage
+
 ### Changed
 * `anon_uuid` to `anon_bicmid`
 * `Logs` table to `Log` table
 
-### Added
-* the `Bicmid` table into databse
-* `bicmid` on browser's local strage
+### Fixed
+* primary key AUTOINCREMENT on create table
+* get_or_store_xxx() must return -1 if it errors
 
 
 ## [0.1.7] (2025-12-27)
