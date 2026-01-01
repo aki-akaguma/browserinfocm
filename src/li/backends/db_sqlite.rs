@@ -182,7 +182,7 @@ pub async fn save_broinfo(
         }
         //
         tx.execute(
-            "INSERT INTO Logs (jsinfo_id, user_agent_id, referrer_id, ipaddress_id, bicmid_id, user_id) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            "INSERT INTO Log (jsinfo_id, user_agent_id, referrer_id, ipaddress_id, bicmid_id, user_id) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
             rusqlite::params![&jsinfo_id, &user_agent_id, &referrer_id, &ipaddress_id, &bicmid_id, &user_id],
         )?;
         //
@@ -312,9 +312,9 @@ fn create_tables(conn: &rusqlite::Connection) -> rusqlite::Result<()> {
         "INSERT INTO User (value) SELECT * FROM (SELECT '') AS User
             WHERE NOT EXISTS (SELECT * FROM User WHERE value = '');",
     )?;
-    // table: `Logs`
+    // table: `Log`
     conn.execute_batch(
-        "CREATE TABLE IF NOT EXISTS Logs (
+        "CREATE TABLE IF NOT EXISTS Log (
                 id INTEGER PRIMARY KEY,
                 create_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 jsinfo_id INTEGER NOT NULL,
@@ -324,12 +324,12 @@ fn create_tables(conn: &rusqlite::Connection) -> rusqlite::Result<()> {
                 bicmid_id INTEGER NOT NULL,
                 user_id INTEGER NOT NULL
         );
-        CREATE INDEX IF NOT EXISTS Logs_jsinfo_id ON Logs (jsinfo_id);
-        CREATE INDEX IF NOT EXISTS Logs_user_agent_id ON Logs (user_agent_id);
-        CREATE INDEX IF NOT EXISTS Logs_referrer_id ON Logs (referrer_id);
-        CREATE INDEX IF NOT EXISTS Logs_ipaddress_id ON Logs (ipaddress_id);
-        CREATE INDEX IF NOT EXISTS Logs_bicmid_id ON Logs (bicmid_id);
-        CREATE INDEX IF NOT EXISTS Logs_user_id ON Logs (user_id);
+        CREATE INDEX IF NOT EXISTS Log_jsinfo_id ON Log (jsinfo_id);
+        CREATE INDEX IF NOT EXISTS Log_user_agent_id ON Log (user_agent_id);
+        CREATE INDEX IF NOT EXISTS Log_referrer_id ON Log (referrer_id);
+        CREATE INDEX IF NOT EXISTS Log_ipaddress_id ON Log (ipaddress_id);
+        CREATE INDEX IF NOT EXISTS Log_bicmid_id ON Log (bicmid_id);
+        CREATE INDEX IF NOT EXISTS Log_user_id ON Log (user_id);
         ",
     )?;
     Ok(())
