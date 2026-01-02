@@ -38,7 +38,7 @@ pub fn BrowserInfoCm(mut props: BrowserInfoProps) -> Element {
 }
 
 pub async fn get_browserinfo(user: String) -> Result<(BroInfo, Browser, String)> {
-    let bicmid = get_or_create_bicmid();
+    let bicmid = get_or_create_bicmid().await?;
     //
     #[cfg(feature = "backend_user_agent")]
     {
@@ -60,30 +60,34 @@ pub async fn get_browserinfo(user: String) -> Result<(BroInfo, Browser, String)>
     Ok((broinfo, browser, bicmid))
 }
 
-//// a base64 encoded uuid on browser's local strage.
-#[cfg(target_arch = "wasm32")]
-fn get_or_create_bicmid() -> String {
+// a base64 encoded uuid on browser's local strage.
+async fn get_or_create_bicmid() -> Result<String> {
     use base64::Engine;
 
-    let window = web_sys::window().expect("no window");
-    let storage = window
-        .local_storage()
-        .expect("localStorage error")
-        .expect("localStorage not available");
-    if let Ok(Some(uuid_s)) = storage.get_item("anon_bicmid") {
-        uuid_s
+    // check 'localStrage'
+    let v = document::eval(r#"var r=false;if('localStorage' in window){r=true}return r;"#).await?;
+    let s = v.to_string();
+    if &s != "true" {
+        return Ok("".to_string());
+    }
+    // get from localStrage
+    let js_get: &str = r#"var r='';const rr=window.localStorage.getItem('anon_bicmid');if(rr!=null){r=rr;}return r;"#;
+    let v = document::eval(js_get).await?;
+    let s = v.to_string();
+    //dioxus_logger::tracing::debug!("{s:?}");
+    let ss = s.trim_matches('"');
+    if !ss.is_empty() {
+        Ok(ss.to_string())
     } else {
         // generate a uuid (128bits:16byte)
         let uuid = uuid::Uuid::new_v4();
         let uuid_s = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(uuid.as_bytes());
-        storage.set_item("anon_bicmid", &uuid_s).unwrap();
-        uuid_s
+        // set into localStrage
+        let js_set = format!(r#"window.localStorage.setItem('anon_bicmid','{uuid_s}');return '';"#);
+        let v = document::eval(&js_set).await?;
+        let _ = v.to_string();
+        Ok(uuid_s)
     }
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-fn get_or_create_bicmid() -> String {
-    "".to_string()
 }
 
 pub async fn get_db_path() -> Result<String> {
