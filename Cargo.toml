@@ -37,15 +37,16 @@ uuid = { version = "1.19", features = ["v4", "js"] }
 async-std = { version="1.13", optional=true }
 hmac-sha256 = { version="1.1", optional = true }
 reqwest = { version = "0.12", features = ["json"], optional=true }
+sqlx = { version = "0.8", features = ["runtime-tokio","sqlite"], optional=true }
 
 [target.'cfg(target_os = "android")'.dependencies]
 openssl = { version = "0.10", features = ["vendored"] }
 
-[target.'cfg(target_os = "windows")'.dependencies]
-rusqlite = { version = "0.37", features = ["bundled"], optional = true }
-
-[target.'cfg(not(target_os = "windows"))'.dependencies]
-rusqlite = { version = "0.37", optional = true }
+#[target.'cfg(target_os = "windows")'.dependencies]
+#rusqlite = { version = "0.32", features = ["bundled"], optional = true }
+#
+#[target.'cfg(not(target_os = "windows"))'.dependencies]
+#rusqlite = { version = "0.32", optional = true }
 
 
 [build-dependencies]
@@ -60,11 +61,13 @@ desktop = ["dioxus/desktop", "backend_homedir"]
 mobile = ["dioxus/mobile"]
 server = ["dioxus/server", "database"]
 
-database = ["dep:rusqlite", "dep:hmac-sha256"]
+database = ["dep:sqlx", "dep:hmac-sha256"]
 
 backend_delay = ["dep:async-std"]
 backend_homedir = ["database"]
 backend_next = ["dep:reqwest"]
+
+# for debug
 backend_text = []
 backend_user_agent = []
 

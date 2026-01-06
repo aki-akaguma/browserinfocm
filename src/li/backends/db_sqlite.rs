@@ -6,26 +6,44 @@ use dioxus::prelude::*;
 use browserinfo::UserAgent;
 
 #[cfg(feature = "server")]
-use std::cell::RefCell;
-
-#[cfg(feature = "server")]
 use std::path::PathBuf;
 
 #[cfg(feature = "server")]
 use super::get_ipaddress_string;
 
+#[cfg(feature = "server")]
+use sqlx::Transaction;
+
+#[cfg(feature = "server")]
+use sqlx::Row;
+
+#[cfg(feature = "server")]
+use dioxus::fullstack::Lazy;
+
 // The database is only available to server code
 #[cfg(feature = "server")]
-thread_local! {
-    pub static DB: RefCell<rusqlite::Connection> = {
-        let db_path = get_db_path_();
-        // Open the database from the persisted "broinfo.db" file
-        let conn = rusqlite::Connection::open(db_path).expect("Failed to open database");
-        // Create tables if it doesn't already exist
-        create_tables(&conn).unwrap();
-        // Return the connection
-        RefCell::new(conn)
-    };
+static DB: Lazy<sqlx::SqlitePool> = Lazy::new(|| async move {
+    let pool = create_sqlx_pool().await?;
+    dioxus::Ok(pool)
+});
+
+#[cfg(feature = "server")]
+async fn create_sqlx_pool() -> Result<sqlx::sqlite::SqlitePool> {
+    use sqlx::sqlite::SqliteConnectOptions;
+    use sqlx::sqlite::SqlitePoolOptions;
+    use std::str::FromStr;
+    //
+    let db_path = get_db_path_();
+    let sq_uri = format!("sqlite://{}", db_path.display());
+    // Open the database from the persisted "broinfo.sqlite3" file
+    let opts = SqliteConnectOptions::from_str(&sq_uri)?.create_if_missing(true);
+    let pool = SqlitePoolOptions::new()
+        .max_connections(5)
+        .connect_with(opts)
+        .await?;
+    // Create tables if it doesn't already exist
+    create_tables(&pool).await?;
+    Ok(pool)
 }
 
 #[cfg(feature = "server")]
@@ -46,7 +64,7 @@ fn get_db_path_() -> PathBuf {
     let db_file = if let Ok(s) = std::env::var(key3) {
         s
     } else {
-        "browserinfocm.db".to_string()
+        "browserinfocm.sqlite3".to_string()
     };
     data_dir.push(db_file);
     data_dir
@@ -57,7 +75,7 @@ fn data_dir() -> PathBuf {
     let data_dir: PathBuf;
     #[cfg(not(feature = "backend_homedir"))]
     {
-        data_dir = PathBuf::from("/var/local/data/broinfo");
+        data_dir = PathBuf::from("/var/local/data/browserinfocm");
         let _ = std::fs::create_dir_all(&data_dir);
     }
     #[cfg(feature = "backend_homedir")]
@@ -78,7 +96,7 @@ fn data_dir_on_desktop() -> PathBuf {
         }
     };
     data_dir.push(".data");
-    data_dir.push("broinfo");
+    data_dir.push("browserinfocm");
     let _ = std::fs::create_dir_all(&data_dir);
     data_dir
 }
@@ -106,16 +124,18 @@ pub async fn save_user_agent(ua: UserAgent) -> Result<()> {
     #[cfg(feature = "backend_text")]
     write_backend_text("user_agent.txt", ua_s)?;
     //
-    DB.with_borrow_mut(|f| {
-        let tx = f.transaction()?;
+    loop {
+        let mut tx = DB.begin().await?;
         //
-        let user_agent_id = get_or_store_user_agent(&tx, &ua_s)?;
+        let user_agent_id = get_or_store_user_agent(&mut tx, ua_s).await?;
         if user_agent_id == -1 {
-            tx.rollback()?;
-            return Ok(());
+            tx.rollback().await?;
+            break;
         }
-        tx.commit()
-    })?;
+        //
+        tx.commit().await?;
+        break;
+    }
     //
     dioxus_logger::tracing::debug!("save_user_agent: {ua_s:?}");
     //
@@ -142,52 +162,62 @@ pub async fn save_broinfo(
     #[cfg(feature = "backend_text")]
     write_backend_text("jsinfo.txt", &jsinfo_s)?;
     //
-    DB.with_borrow_mut(|f| {
-        let tx = f.transaction()?;
+    loop {
+        let mut tx: Transaction<'_, sqlx::Sqlite> = DB.begin().await?;
         //
-        let user_agent_id = get_or_store_user_agent(&tx, user_agent.get())?;
+        let user_agent_id = get_or_store_user_agent(&mut tx, user_agent.get()).await?;
         if user_agent_id == -1 {
-            tx.rollback()?;
-            return Ok(());
+            tx.rollback().await?;
+            break;
         }
         //
-        let referrer_id = get_or_store_referrer(&tx, referrer.get())?;
+        let referrer_id = get_or_store_referrer(&mut tx, referrer.get()).await?;
         if referrer_id == -1 {
-            tx.rollback()?;
-            return Ok(());
+            tx.rollback().await?;
+            break;
         }
         //
-        let ipaddress_id = get_or_store_ipaddress(&tx, &ipaddress)?;
+        let ipaddress_id = get_or_store_ipaddress(&mut tx, &ipaddress).await?;
         if ipaddress_id == -1 {
-            tx.rollback()?;
-            return Ok(());
+            tx.rollback().await?;
+            break;
         }
         //
-        let bicmid_id = get_or_store_bicmid(&tx, &bicmid)?;
+        let bicmid_id = get_or_store_bicmid(&mut tx, &bicmid).await?;
         if bicmid_id == -1 {
-            tx.rollback()?;
-            return Ok(());
+            tx.rollback().await?;
+            break;
         }
         //
-        let user_id = get_or_store_user(&tx, &user)?;
+        let user_id = get_or_store_user(&mut tx, &user).await?;
         if user_id == -1 {
-            tx.rollback()?;
-            return Ok(());
+            tx.rollback().await?;
+            break;
         }
         //
-        let jsinfo_id = get_or_store_jsinfo(&tx, &jsinfo_ss)?;
+        let jsinfo_id = get_or_store_jsinfo(&mut tx, &jsinfo_ss).await?;
         if jsinfo_id == -1 {
-            tx.rollback()?;
-            return Ok(());
+            tx.rollback().await?;
+            break;
         }
         //
-        tx.execute(
-            "INSERT INTO Log (jsinfo_id, user_agent_id, referrer_id, ipaddress_id, bicmid_id, user_id) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
-            rusqlite::params![&jsinfo_id, &user_agent_id, &referrer_id, &ipaddress_id, &bicmid_id, &user_id],
-        )?;
+        sqlx::query(concat!(
+            r#"INSERT INTO Log"#,
+            r#" (jsinfo_id, user_agent_id, referrer_id, ipaddress_id, bicmid_id, user_id)"#,
+            r#" VALUES (?, ?, ?, ?, ?, ?)"#
+        ))
+        .bind(&jsinfo_id)
+        .bind(&user_agent_id)
+        .bind(&referrer_id)
+        .bind(&ipaddress_id)
+        .bind(&bicmid_id)
+        .bind(&user_id)
+        .execute(&mut *tx)
+        .await?;
         //
-        tx.commit()
-    })?;
+        tx.commit().await?;
+        break;
+    }
     //
     dioxus_logger::tracing::debug!("save_broinfo: {jsinfo_ss:?}");
     //
@@ -226,216 +256,89 @@ async fn sleep_x(millis: u64) -> Result<()> {
 
 // Create tables if it doesn't already exist
 #[cfg(feature = "server")]
-fn create_tables(conn: &rusqlite::Connection) -> rusqlite::Result<()> {
-    // table: `JsInfo`
-    conn.execute_batch(
-        "CREATE TABLE IF NOT EXISTS JsInfo (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                create_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                hash TEXT NOT NULL,
-                value TEXT NOT NULL
-        );
-        CREATE UNIQUE INDEX IF NOT EXISTS JsInfo_value ON JsInfo (hash, value);",
-    )?;
+async fn create_tables(pool: &sqlx::sqlite::SqlitePool) -> Result<()> {
+    const SQL: &str = include_str!("../../../migrations/20260107001015_create-tables.up.sql");
+    sqlx::query(SQL).execute(pool).await?;
+    //
+    // `JsInfo` special data
     {
         let s = "";
         let hash = create_jsinfo_hash(s);
         let hash_s = hash.as_str();
-        conn.execute(
-            "INSERT INTO JsInfo (id, hash, value) SELECT * FROM (SELECT 0, ?1, ?2) AS JsInfo
-                WHERE NOT EXISTS (SELECT * FROM JsInfo WHERE id = 0);",
-            &[hash_s, s],
-        )?;
+        const SQL: &str = concat!(
+            r#"INSERT INTO JsInfo (id, hash, value)"#,
+            r#" SELECT * FROM (SELECT 0, ?, ?) AS JsInfo"#,
+            r#" WHERE NOT EXISTS (SELECT * FROM JsInfo WHERE id = 0);"#
+        );
+        sqlx::query(SQL).bind(hash_s).bind(s).execute(pool).await?;
     }
-    // table: `UserAgent`
-    conn.execute_batch(
-        "CREATE TABLE IF NOT EXISTS UserAgent (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                create_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                value TEXT NOT NULL
-        );
-        CREATE UNIQUE INDEX IF NOT EXISTS UserAgent_value ON UserAgent (value);",
-    )?;
-    conn.execute_batch(
-        "INSERT INTO UserAgent (id, value) SELECT * FROM (SELECT 0, '') AS UserAgent
-            WHERE NOT EXISTS (SELECT * FROM UserAgent WHERE id = 0);",
-    )?;
-    // table: `Referrer`
-    conn.execute_batch(
-        "CREATE TABLE IF NOT EXISTS Referrer (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                create_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                value TEXT NOT NULL
-        );
-        CREATE UNIQUE INDEX IF NOT EXISTS Referrer_value ON Referrer (value);",
-    )?;
-    conn.execute_batch(
-        "INSERT INTO Referrer (id, value) SELECT * FROM (SELECT 0, '') AS Referrer
-            WHERE NOT EXISTS (SELECT * FROM Referrer WHERE id = 0);",
-    )?;
-    // table: `IpAddress`
-    conn.execute_batch(
-        "CREATE TABLE IF NOT EXISTS IpAddress (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                create_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                value TEXT NOT NULL
-        );
-        CREATE UNIQUE INDEX IF NOT EXISTS IpAddress_value ON IpAddress (value);",
-    )?;
-    conn.execute_batch(
-        "INSERT INTO IpAddress (id, value) SELECT * FROM (SELECT 0, '') AS IpAddress
-            WHERE NOT EXISTS (SELECT * FROM IpAddress WHERE id = 0);",
-    )?;
-    // table: `Bicmid`
-    conn.execute_batch(
-        "CREATE TABLE IF NOT EXISTS Bicmid (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                create_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                value TEXT NOT NULL
-        );
-        CREATE UNIQUE INDEX IF NOT EXISTS Bicmid_value ON Bicmid (value);",
-    )?;
-    conn.execute_batch(
-        "INSERT INTO Bicmid (id, value) SELECT * FROM (SELECT 0, '') AS Bicmid
-            WHERE NOT EXISTS (SELECT * FROM Bicmid WHERE id = 0);",
-    )?;
-    // table: `User`
-    conn.execute_batch(
-        "CREATE TABLE IF NOT EXISTS User (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                create_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                value TEXT NOT NULL
-        );
-        CREATE UNIQUE INDEX IF NOT EXISTS User_value ON User (value);",
-    )?;
-    conn.execute_batch(
-        "INSERT INTO User (id, value) SELECT * FROM (SELECT 0, '') AS User
-            WHERE NOT EXISTS (SELECT * FROM User WHERE id = 0);",
-    )?;
-    // table: `Log`
-    conn.execute_batch(
-        "CREATE TABLE IF NOT EXISTS Log (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                create_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                jsinfo_id INTEGER NOT NULL,
-                user_agent_id INTEGER NOT NULL,
-                referrer_id INTEGER NOT NULL,
-                ipaddress_id INTEGER NOT NULL,
-                bicmid_id INTEGER NOT NULL,
-                user_id INTEGER NOT NULL
-        );
-        CREATE INDEX IF NOT EXISTS Log_jsinfo_id ON Log (jsinfo_id);
-        CREATE INDEX IF NOT EXISTS Log_user_agent_id ON Log (user_agent_id);
-        CREATE INDEX IF NOT EXISTS Log_referrer_id ON Log (referrer_id);
-        CREATE INDEX IF NOT EXISTS Log_ipaddress_id ON Log (ipaddress_id);
-        CREATE INDEX IF NOT EXISTS Log_bicmid_id ON Log (bicmid_id);
-        CREATE INDEX IF NOT EXISTS Log_user_id ON Log (user_id);
-        ",
-    )?;
     Ok(())
 }
 
 #[cfg(feature = "server")]
-fn get_or_store_user_agent(tx: &rusqlite::Transaction, user_agent: &str) -> rusqlite::Result<i64> {
-    let mut user_agent_id = -1;
-    let r: rusqlite::Result<i64> = tx.query_one(
-        "SELECT id FROM UserAgent WHERE value = ?1",
-        &[user_agent],
-        |row| row.get(0),
-    );
-    if let Err(rusqlite::Error::QueryReturnedNoRows) = r {
-        tx.execute("INSERT INTO UserAgent (value) VALUES (?1)", &[user_agent])?;
-        user_agent_id = tx.last_insert_rowid();
-    } else if let Ok(id) = r {
-        user_agent_id = id;
-    }
-    Ok(user_agent_id)
+macro_rules! simple_get_or_store {
+    ($func:ident, $val: ident, $tbl: expr) => {
+        async fn $func(tx: &mut sqlx::Transaction<'_, sqlx::Sqlite>, $val: &str) -> Result<i64> {
+            let mut tbl_id = -1;
+            let r = sqlx::query(concat!(r#"SELECT id FROM "#, $tbl, r#" WHERE value = ?"#))
+                .bind($val)
+                .fetch_one(&mut **tx)
+                .await;
+            if let Ok(row) = r {
+                tbl_id = row.get(0);
+            } else if let Err(sqlx::Error::RowNotFound) = r {
+                let r = sqlx::query(concat!(r#"INSERT INTO "#, $tbl, r#" (value) VALUES (?)"#))
+                    .bind($val)
+                    .execute(&mut **tx)
+                    .await?;
+                tbl_id = r.last_insert_rowid();
+            } else if let Err(e) = r {
+                return Err(e.into());
+            }
+            Ok(tbl_id)
+        }
+    };
 }
 
 #[cfg(feature = "server")]
-fn get_or_store_referrer(tx: &rusqlite::Transaction, referrer: &str) -> rusqlite::Result<i64> {
-    let mut referrer_id = -1;
-    let r: rusqlite::Result<i64> = tx.query_one(
-        "SELECT id FROM Referrer WHERE value = ?1",
-        &[referrer],
-        |row| row.get(0),
-    );
-    if let Err(rusqlite::Error::QueryReturnedNoRows) = r {
-        tx.execute("INSERT INTO Referrer (value) VALUES (?1)", &[referrer])?;
-        referrer_id = tx.last_insert_rowid();
-    } else if let Ok(id) = r {
-        referrer_id = id;
-    }
-    Ok(referrer_id)
-}
+simple_get_or_store!(get_or_store_user_agent, user_agent, "UserAgent");
 
 #[cfg(feature = "server")]
-fn get_or_store_ipaddress(tx: &rusqlite::Transaction, ipaddress: &str) -> rusqlite::Result<i64> {
-    let mut ipaddress_id = -1;
-    let r: rusqlite::Result<i64> = tx.query_one(
-        "SELECT id FROM IpAddress WHERE value = ?1",
-        &[ipaddress],
-        |row| row.get(0),
-    );
-    if let Err(rusqlite::Error::QueryReturnedNoRows) = r {
-        tx.execute("INSERT INTO IpAddress (value) VALUES (?1)", &[ipaddress])?;
-        ipaddress_id = tx.last_insert_rowid();
-    } else if let Ok(id) = r {
-        ipaddress_id = id;
-    }
-    Ok(ipaddress_id)
-}
+simple_get_or_store!(get_or_store_referrer, referrer, "Referrer");
 
 #[cfg(feature = "server")]
-fn get_or_store_bicmid(tx: &rusqlite::Transaction, bicmid: &str) -> rusqlite::Result<i64> {
-    let mut bicmid_id = -1;
-    let r: rusqlite::Result<i64> =
-        tx.query_one("SELECT id FROM Bicmid WHERE value = ?1", &[bicmid], |row| {
-            row.get(0)
-        });
-    if let Err(rusqlite::Error::QueryReturnedNoRows) = r {
-        tx.execute("INSERT INTO Bicmid (value) VALUES (?1)", &[bicmid])?;
-        bicmid_id = tx.last_insert_rowid();
-    } else if let Ok(id) = r {
-        bicmid_id = id;
-    }
-    Ok(bicmid_id)
-}
+simple_get_or_store!(get_or_store_ipaddress, ipaddress, "IpAddress");
 
 #[cfg(feature = "server")]
-fn get_or_store_user(tx: &rusqlite::Transaction, user: &str) -> rusqlite::Result<i64> {
-    let mut user_id = -1;
-    let r: rusqlite::Result<i64> =
-        tx.query_one("SELECT id FROM User WHERE value = ?1", &[user], |row| {
-            row.get(0)
-        });
-    if let Err(rusqlite::Error::QueryReturnedNoRows) = r {
-        tx.execute("INSERT INTO User (value) VALUES (?1)", &[user])?;
-        user_id = tx.last_insert_rowid();
-    } else if let Ok(id) = r {
-        user_id = id;
-    }
-    Ok(user_id)
-}
+simple_get_or_store!(get_or_store_bicmid, bicmid, "Bicmid");
 
 #[cfg(feature = "server")]
-fn get_or_store_jsinfo(tx: &rusqlite::Transaction, info_s: &str) -> rusqlite::Result<i64> {
+simple_get_or_store!(get_or_store_user, user, "User");
+
+#[cfg(feature = "server")]
+async fn get_or_store_jsinfo(
+    tx: &mut sqlx::Transaction<'_, sqlx::Sqlite>,
+    info_s: &str,
+) -> Result<i64> {
     let hash = create_jsinfo_hash(info_s);
     let hash_s = hash.as_str();
     let mut jsinfo_id = -1;
-    let r: rusqlite::Result<i64> = tx.query_one(
-        "SELECT id FROM JsInfo WHERE hash = ?1 AND value = ?2",
-        &[hash_s, info_s],
-        |row| row.get(0),
-    );
-    if let Err(rusqlite::Error::QueryReturnedNoRows) = r {
-        tx.execute(
-            "INSERT INTO JsInfo (hash, value) VALUES (?1, ?2)",
-            &[hash_s, info_s],
-        )?;
-        jsinfo_id = tx.last_insert_rowid();
-    } else if let Ok(id) = r {
-        jsinfo_id = id;
+    let r = sqlx::query(r#"SELECT id FROM JsInfo WHERE hash = ? AND value = ?"#)
+        .bind(hash_s)
+        .bind(info_s)
+        .fetch_one(&mut **tx)
+        .await;
+    if let Ok(row) = r {
+        jsinfo_id = row.get(0);
+    } else if let Err(sqlx::Error::RowNotFound) = r {
+        let r = sqlx::query(r#"INSERT INTO JsInfo (hash, value) VALUES (?, ?)"#)
+            .bind(hash_s)
+            .bind(info_s)
+            .execute(&mut **tx)
+            .await?;
+        jsinfo_id = r.last_insert_rowid();
+    } else if let Err(e) = r {
+        return Err(e.into());
     }
     Ok(jsinfo_id)
 }
