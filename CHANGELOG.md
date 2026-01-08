@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed
+* `fn BrowserInfoCm()` to obtain `bigmid` first
 * migrated from `rusqlite` to `sqlx with sqlite`
 
 

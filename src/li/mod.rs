@@ -1,6 +1,7 @@
 use anyhow::Result;
 use browserinfo::{broinfo_js, BroInfo, Browser};
 use dioxus::prelude::*;
+use std::time::Duration;
 
 #[cfg(feature = "backend_user_agent")]
 use browserinfo::{user_agent_js, UserAgent};
@@ -28,17 +29,23 @@ pub struct BrowserInfoProps {
 #[component]
 pub fn BrowserInfoCm(mut props: BrowserInfoProps) -> Element {
     use_future(move || async move {
-        let (broinfo, browser, bicmid) = get_browserinfo((props.user)()).await.unwrap();
+        let bicmid = get_or_create_bicmid().await.unwrap();
+        props.bicmid.set(bicmid.clone());
+
+        #[cfg(not(target_family = "wasm"))]
+        tokio::time::sleep(Duration::from_millis(0)).await;
+        #[cfg(target_family = "wasm")]
+        gloo_timers::future::sleep(Duration::from_millis(0)).await;
+
+        let (broinfo, browser) = get_browserinfo(bicmid, (props.user)()).await.unwrap();
         props.broinfo.set(broinfo);
         props.browser.set(browser);
-        props.bicmid.set(bicmid);
     });
 
     rsx! {}
 }
 
-pub async fn get_browserinfo(user: String) -> Result<(BroInfo, Browser, String)> {
-    let bicmid = get_or_create_bicmid().await?;
+pub async fn get_browserinfo(bicmid: String, user: String) -> Result<(BroInfo, Browser)> {
     //
     #[cfg(feature = "backend_user_agent")]
     {
@@ -54,10 +61,10 @@ pub async fn get_browserinfo(user: String) -> Result<(BroInfo, Browser, String)>
     let s = v.to_string();
     let broinfo = BroInfo::from_json_str(&s)?;
     //dioxus_logger::tracing::debug!("{s:?}");
-    let browser = backends::save_broinfo(broinfo.clone(), bicmid.clone(), user, true)
+    let browser = backends::save_broinfo(broinfo.clone(), bicmid, user, true)
         .await?
         .unwrap();
-    Ok((broinfo, browser, bicmid))
+    Ok((broinfo, browser))
 }
 
 // a base64 encoded uuid on browser's local strage.
