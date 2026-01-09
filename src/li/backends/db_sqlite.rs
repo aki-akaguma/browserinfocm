@@ -258,7 +258,7 @@ async fn sleep_x(millis: u64) -> Result<()> {
 #[cfg(feature = "server")]
 async fn create_tables(pool: &sqlx::sqlite::SqlitePool) -> Result<()> {
     const SQL: &str = include_str!("../../../migrations/20260107001015_create-tables.up.sql");
-    sqlx::query(SQL).execute(pool).await?;
+    sqlx::raw_sql(SQL).execute(pool).await?;
     //
     // `JsInfo` special data
     {
@@ -268,27 +268,32 @@ async fn create_tables(pool: &sqlx::sqlite::SqlitePool) -> Result<()> {
         const SQL: &str = concat!(
             r#"INSERT INTO JsInfo (id, hash, value)"#,
             r#" SELECT * FROM (SELECT 0, ?, ?) AS JsInfo"#,
-            r#" WHERE NOT EXISTS (SELECT * FROM JsInfo WHERE id = 0);"#
+            r#" WHERE NOT EXISTS (SELECT * FROM JsInfo WHERE id = 0)"#
         );
-        sqlx::query(SQL).bind(hash_s).bind(s).execute(pool).await?;
+        sqlx::query(SQL)
+            .persistent(false)
+            .bind(hash_s)
+            .bind(s)
+            .execute(pool)
+            .await?;
     }
     Ok(())
 }
 
 #[cfg(feature = "server")]
 macro_rules! simple_get_or_store {
-    ($func:ident, $val: ident, $tbl: expr) => {
-        async fn $func(tx: &mut sqlx::Transaction<'_, sqlx::Sqlite>, $val: &str) -> Result<i64> {
+    ($func:ident, $tbl: expr) => {
+        async fn $func(tx: &mut sqlx::Transaction<'_, sqlx::Sqlite>, val: &str) -> Result<i64> {
             let mut tbl_id = -1;
             let r = sqlx::query(concat!(r#"SELECT id FROM "#, $tbl, r#" WHERE value = ?"#))
-                .bind($val)
+                .bind(val)
                 .fetch_one(&mut **tx)
                 .await;
             if let Ok(row) = r {
                 tbl_id = row.get(0);
             } else if let Err(sqlx::Error::RowNotFound) = r {
                 let r = sqlx::query(concat!(r#"INSERT INTO "#, $tbl, r#" (value) VALUES (?)"#))
-                    .bind($val)
+                    .bind(val)
                     .execute(&mut **tx)
                     .await?;
                 tbl_id = r.last_insert_rowid();
@@ -301,19 +306,19 @@ macro_rules! simple_get_or_store {
 }
 
 #[cfg(feature = "server")]
-simple_get_or_store!(get_or_store_user_agent, user_agent, "UserAgent");
+simple_get_or_store!(get_or_store_user_agent, "UserAgent");
 
 #[cfg(feature = "server")]
-simple_get_or_store!(get_or_store_referrer, referrer, "Referrer");
+simple_get_or_store!(get_or_store_referrer, "Referrer");
 
 #[cfg(feature = "server")]
-simple_get_or_store!(get_or_store_ipaddress, ipaddress, "IpAddress");
+simple_get_or_store!(get_or_store_ipaddress, "IpAddress");
 
 #[cfg(feature = "server")]
-simple_get_or_store!(get_or_store_bicmid, bicmid, "Bicmid");
+simple_get_or_store!(get_or_store_bicmid, "Bicmid");
 
 #[cfg(feature = "server")]
-simple_get_or_store!(get_or_store_user, user, "User");
+simple_get_or_store!(get_or_store_user, "User");
 
 #[cfg(feature = "server")]
 async fn get_or_store_jsinfo(
