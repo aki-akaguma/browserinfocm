@@ -9,7 +9,7 @@ use browserinfo::UserAgent;
 use std::path::PathBuf;
 
 #[cfg(feature = "server")]
-use super::get_ipaddress_string;
+use super::get_ip_address_string;
 
 #[cfg(feature = "server")]
 use sqlx::Transaction;
@@ -110,8 +110,8 @@ pub async fn get_db_path() -> Result<String> {
 }
 
 #[post("/api/v1/ringo1", headers: dioxus::fullstack::HeaderMap)]
-pub async fn get_ipaddress() -> Result<String> {
-    let ipaddr = get_ipaddress_string(&headers);
+pub async fn get_ip_address() -> Result<String> {
+    let ipaddr = get_ip_address_string(&headers);
     dioxus_logger::tracing::debug!("ipaddr: {ipaddr:?}");
     Ok(ipaddr)
 }
@@ -152,7 +152,7 @@ pub async fn save_broinfo(
     user: String,
     return_browser: bool,
 ) -> Result<Option<Browser>> {
-    let ipaddress = get_ipaddress_string(&headers);
+    let ip_address = get_ip_address_string(&headers);
     let user_agent = broinfo.basic.user_agent.clone();
     let referrer = broinfo.basic.referrer.clone();
 
@@ -177,8 +177,8 @@ pub async fn save_broinfo(
             break;
         }
         //
-        let ipaddress_id = get_or_store_ipaddress(&mut tx, &ipaddress).await?;
-        if ipaddress_id == -1 {
+        let ip_address_id = get_or_store_ip_address(&mut tx, &ip_address).await?;
+        if ip_address_id == -1 {
             tx.rollback().await?;
             break;
         }
@@ -202,14 +202,14 @@ pub async fn save_broinfo(
         }
         //
         sqlx::query(concat!(
-            r#"INSERT INTO Log"#,
-            r#" (jsinfo_id, user_agent_id, referrer_id, ipaddress_id, bicmid_id, user_id)"#,
+            r#"INSERT INTO logs"#,
+            r#" (jsinfo_id, user_agent_id, referrer_id, ip_address_id, bicmid_id, user_id)"#,
             r#" VALUES (?, ?, ?, ?, ?, ?)"#
         ))
         .bind(&jsinfo_id)
         .bind(&user_agent_id)
         .bind(&referrer_id)
-        .bind(&ipaddress_id)
+        .bind(&ip_address_id)
         .bind(&bicmid_id)
         .bind(&user_id)
         .execute(&mut *tx)
@@ -266,9 +266,9 @@ async fn create_tables(pool: &sqlx::sqlite::SqlitePool) -> Result<()> {
         let hash = create_jsinfo_hash(s);
         let hash_s = hash.as_str();
         const SQL: &str = concat!(
-            r#"INSERT INTO JsInfo (id, hash, value)"#,
-            r#" SELECT * FROM (SELECT 0, ?, ?) AS JsInfo"#,
-            r#" WHERE NOT EXISTS (SELECT * FROM JsInfo WHERE id = 0)"#
+            r#"INSERT INTO jsinfos (id, hash, value)"#,
+            r#" SELECT * FROM (SELECT 0, ?, ?) AS jsinfos"#,
+            r#" WHERE NOT EXISTS (SELECT * FROM jsinfos WHERE id = 0)"#
         );
         sqlx::query(SQL)
             .persistent(false)
@@ -306,19 +306,19 @@ macro_rules! simple_get_or_store {
 }
 
 #[cfg(feature = "server")]
-simple_get_or_store!(get_or_store_user_agent, "UserAgent");
+simple_get_or_store!(get_or_store_user_agent, "user_agents");
 
 #[cfg(feature = "server")]
-simple_get_or_store!(get_or_store_referrer, "Referrer");
+simple_get_or_store!(get_or_store_referrer, "referrers");
 
 #[cfg(feature = "server")]
-simple_get_or_store!(get_or_store_ipaddress, "IpAddress");
+simple_get_or_store!(get_or_store_ip_address, "ip_addresses");
 
 #[cfg(feature = "server")]
-simple_get_or_store!(get_or_store_bicmid, "Bicmid");
+simple_get_or_store!(get_or_store_bicmid, "bicmids");
 
 #[cfg(feature = "server")]
-simple_get_or_store!(get_or_store_user, "User");
+simple_get_or_store!(get_or_store_user, "users");
 
 #[cfg(feature = "server")]
 async fn get_or_store_jsinfo(
@@ -328,7 +328,7 @@ async fn get_or_store_jsinfo(
     let hash = create_jsinfo_hash(info_s);
     let hash_s = hash.as_str();
     let mut jsinfo_id = -1;
-    let r = sqlx::query(r#"SELECT id FROM JsInfo WHERE hash = ? AND value = ?"#)
+    let r = sqlx::query(r#"SELECT id FROM jsinfos WHERE hash = ? AND value = ?"#)
         .bind(hash_s)
         .bind(info_s)
         .fetch_one(&mut **tx)
@@ -336,7 +336,7 @@ async fn get_or_store_jsinfo(
     if let Ok(row) = r {
         jsinfo_id = row.get(0);
     } else if let Err(sqlx::Error::RowNotFound) = r {
-        let r = sqlx::query(r#"INSERT INTO JsInfo (hash, value) VALUES (?, ?)"#)
+        let r = sqlx::query(r#"INSERT INTO jsinfos (hash, value) VALUES (?, ?)"#)
             .bind(hash_s)
             .bind(info_s)
             .execute(&mut **tx)

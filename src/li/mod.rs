@@ -10,7 +10,7 @@ mod backends;
 
 #[cfg(feature = "server")]
 #[allow(unused_imports)]
-pub use backends::get_ipaddress_string;
+pub use backends::get_ip_address_string;
 
 #[derive(Props, Debug, Clone, PartialEq)]
 pub struct BrowserInfoProps {

@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed
+* to match database name convention
 * `CREATE TABLE` to use `raw_sql()`
 * `fn BrowserInfoCm()` to obtain `bicmid` first
 * migrated from `rusqlite` to `sqlx with sqlite`

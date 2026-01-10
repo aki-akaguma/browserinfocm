@@ -17,7 +17,7 @@ pub use debug::*;
 
 #[allow(unused)]
 #[cfg(feature = "server")]
-pub fn get_ipaddress_string(headers: &dioxus::fullstack::HeaderMap) -> String {
+pub fn get_ip_address_string(headers: &dioxus::fullstack::HeaderMap) -> String {
     let ip = if let Some(s) = headers.get("x-forwarded-for") {
         // format:
         //     X-Forwarded-For: client1, proxy1, proxy2, ...
