@@ -1,7 +1,6 @@
 use anyhow::Result;
 use browserinfo::{broinfo_js, BroInfo, Browser};
 use dioxus::prelude::*;
-use std::time::Duration;
 
 #[cfg(feature = "backend_user_agent")]
 use browserinfo::{user_agent_js, UserAgent};
@@ -32,10 +31,7 @@ pub fn BrowserInfoCm(mut props: BrowserInfoProps) -> Element {
         let bicmid = get_or_create_bicmid().await.unwrap();
         props.bicmid.set(bicmid.clone());
 
-        #[cfg(not(target_family = "wasm"))]
-        tokio::time::sleep(Duration::from_millis(0)).await;
-        #[cfg(target_family = "wasm")]
-        gloo_timers::future::sleep(Duration::from_millis(0)).await;
+        async_sleep_aki::async_sleep(0).await;
 
         let (broinfo, browser) = get_browserinfo(bicmid, (props.user)()).await.unwrap();
         props.broinfo.set(broinfo);

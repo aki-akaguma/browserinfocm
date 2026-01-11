@@ -34,17 +34,14 @@ serde = { version = "1.0", features = ["derive"] }
 base64 = "0.22"
 uuid = { version = "1.19", features = ["v4", "js"] }
 
-async-std = { version="1.13", optional=true }
 hmac-sha256 = { version="1.1", optional = true }
-reqwest = { version = "0.12", features = ["json"], optional=true }
-sqlx = { version = "0.8", features = ["runtime-tokio","sqlite"], optional=true }
+reqwest = { version = "0.12", features = ["json"], optional = true }
+sqlx = { version = "0.8", features = ["runtime-tokio","sqlite"], optional = true }
 
-# for sleep()
-[target.'cfg(not(target_family = "wasm"))'.dependencies]
-tokio = { version="1.49", features =["time"] }
+#async-sleep-aki = { path = "../async-sleep-aki" }
+async-sleep-aki = "0.1"
 
-[target.'cfg(target_family = "wasm")'.dependencies]
-gloo-timers = { version = "0.3", features = ["futures"] }
+zvariant = { version = "=5.8.0", features = ["enumflags2"], optional = true }
 
 [target.'cfg(target_os = "android")'.dependencies]
 openssl = { version = "0.10", features = ["vendored"] }
@@ -58,13 +55,15 @@ rust-version-info-file = { version = "0.2", optional = true }
 default = []
 
 web = ["dioxus/web"]
-desktop = ["dioxus/desktop", "backend_homedir"]
+desktop = ["dioxus/desktop", "backend_homedir", "desktop_fix"]
 mobile = ["dioxus/mobile"]
 server = ["dioxus/server", "database"]
 
 database = ["dep:sqlx", "dep:hmac-sha256"]
 
-backend_delay = ["dep:async-std"]
+desktop_fix = ["dep:zvariant"]
+
+backend_delay = []
 backend_homedir = ["database"]
 backend_next = ["dep:reqwest"]
 

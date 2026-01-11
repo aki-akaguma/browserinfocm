@@ -250,7 +250,8 @@ fn write_backend_text(fnm: &str, data: &str) -> Result<()> {
 #[cfg(feature = "backend_delay")]
 #[cfg(feature = "server")]
 async fn sleep_x(millis: u64) -> Result<()> {
-    async_std::task::sleep(std::time::Duration::from_millis(millis)).await;
+    use std::time::Duration;
+    async_sleep_aki::async_sleep(Duration::from_millis(millis)).await;
     Ok(())
 }
 
