@@ -18,15 +18,15 @@ repository = "https://github.com/aki-akaguma/broinfocm"
 crates = ["dioxus-fullstack"]
 
 [patch.crates-io]
-dioxus-fullstack = { path = "./patched/dioxus-fullstack-0.7.2" }
+dioxus-fullstack = { path = "./patched/dioxus-fullstack-0.7.3" }
 
 [dependencies]
-browserinfo = "0.1.4"
+browserinfo = "0.1.5"
 #browserinfo = { path="../browserinfo" }
 
-dioxus = { version = "0.7.2", features = ["fullstack"] }
-dioxus-fullstack = "0.7.2"
-dioxus-logger = "0.7.2"
+dioxus = { version = "0.7.3", features = ["fullstack"] }
+dioxus-fullstack = "0.7.3"
+dioxus-logger = "0.7.3"
 
 anyhow = "1.0"
 toml = "0.9"

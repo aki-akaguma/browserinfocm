@@ -26,3 +26,6 @@ fmt:
 doc:
 	cargo doc
 
+apply-patch:
+	cargo patch-crate
+
