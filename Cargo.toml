@@ -21,7 +21,7 @@ crates = ["dioxus-fullstack"]
 dioxus-fullstack = { path = "./patched/dioxus-fullstack-0.7.3" }
 
 [dependencies]
-browserinfo = "0.1.5"
+browserinfo = "0.1.6"
 #browserinfo = { path="../browserinfo" }
 
 dioxus = { version = "0.7.3", features = ["fullstack"] }

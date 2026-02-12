@@ -68,13 +68,14 @@ async fn get_or_create_bicmid() -> Result<String> {
     use base64::Engine;
 
     // check 'localStrage'
-    let v = document::eval(r#"var r=false;if('localStorage' in window){r=true}return r;"#).await?;
+    let v =
+        document::eval(r#"{var r=false;if('localStorage' in window){r=true}return r;}"#).await?;
     let s = v.to_string();
     if &s != "true" {
         return Ok("".to_string());
     }
     // get from localStrage
-    let js_get: &str = r#"var r='';const rr=window.localStorage.getItem('anon_bicmid');if(rr!=null){r=rr;}return r;"#;
+    let js_get: &str = r#"{var r='';const rr=window.localStorage.getItem('anon_bicmid');if(rr!=null){r=rr;}return r;}"#;
     let v = document::eval(js_get).await?;
     let s = v.to_string();
     //dioxus_logger::tracing::debug!("{s:?}");
@@ -86,7 +87,8 @@ async fn get_or_create_bicmid() -> Result<String> {
         let uuid = uuid::Uuid::new_v4();
         let uuid_s = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(uuid.as_bytes());
         // set into localStrage
-        let js_set = format!(r#"window.localStorage.setItem('anon_bicmid','{uuid_s}');return '';"#);
+        let js_set =
+            format!(r#"{{window.localStorage.setItem('anon_bicmid','{uuid_s}');return '';}}"#);
         let v = document::eval(&js_set).await?;
         let _ = v.to_string();
         Ok(uuid_s)
