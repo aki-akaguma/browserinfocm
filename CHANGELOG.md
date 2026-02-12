@@ -6,9 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+
+## [0.1.14] (2026-02-12)
 ### Fixed
 * unreachable code after return statement: added all around `{}` on javascript
-
 
 ## [0.1.13] (2026-01-19)
 ### Removed
@@ -94,7 +96,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 * first commit
 
-[Unreleased]: https://github.com/aki-akaguma/browserinfocm/compare/v0.1.13..HEAD
+[Unreleased]: https://github.com/aki-akaguma/browserinfocm/compare/v0.1.14..HEAD
+[0.1.14]: https://github.com/aki-akaguma/browserinfocm/compare/v0.1.13..v0.1.14
 [0.1.13]: https://github.com/aki-akaguma/browserinfocm/compare/v0.1.12..v0.1.13
 [0.1.12]: https://github.com/aki-akaguma/browserinfocm/compare/v0.1.11..v0.1.12
 [0.1.11]: https://github.com/aki-akaguma/browserinfocm/compare/v0.1.10..v0.1.11
