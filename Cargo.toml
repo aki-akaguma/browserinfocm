@@ -1,6 +1,6 @@
 [package]
 name = "browserinfocm"
-version = "0.1.14"
+version = "0.1.15"
 authors = ["aki <aki.akaguma@hotmail.com>"]
 edition = "2021"
 description = """
@@ -18,30 +18,30 @@ repository = "https://github.com/aki-akaguma/broinfocm"
 crates = ["dioxus-fullstack"]
 
 [patch.crates-io]
-dioxus-fullstack = { path = "./patched/dioxus-fullstack-0.7.3" }
+dioxus-fullstack = { path = "./patched/dioxus-fullstack-0.7.4" }
 
 [dependencies]
 browserinfo = "0.1.6"
 #browserinfo = { path="../browserinfo" }
 
-dioxus = { version = "0.7.3", features = ["fullstack"] }
-dioxus-fullstack = "0.7.3"
-dioxus-logger = "0.7.3"
+async-sleep-aki = "0.1"
+#async-sleep-aki = { path = "../async-sleep-aki" }
+
+dioxus = { version = "0.7.4", features = ["fullstack"] }
+dioxus-fullstack = "0.7.4"
+dioxus-logger = "0.7.4"
 
 anyhow = "1.0"
-toml = "0.9"
+toml = "1.1"
 serde = { version = "1.0", features = ["derive"] }
 base64 = "0.22"
 uuid = { version = "1.19", features = ["v4", "js"] }
 
 hmac-sha256 = { version="1.1", optional = true }
-reqwest = { version = "0.12", features = ["json"], optional = true }
 sqlx = { version = "0.8", features = ["runtime-tokio","sqlite"], optional = true }
 
-#async-sleep-aki = { path = "../async-sleep-aki" }
-async-sleep-aki = "0.1"
-
-##zvariant = { version = "=5.8.0", features = ["enumflags2"], optional = true }
+# depend on dioxus
+reqwest = { version = "0.12", default-features = false, features = ["json"], optional = true }
 
 [target.'cfg(target_os = "android")'.dependencies]
 openssl = { version = "0.10", features = ["vendored"] }
@@ -55,14 +55,11 @@ rust-version-info-file = { version = "0.2", optional = true }
 default = []
 
 web = ["dioxus/web"]
-desktop = ["dioxus/desktop", "backend_homedir", "desktop_fix"]
+desktop = ["dioxus/desktop", "backend_homedir"]
 mobile = ["dioxus/mobile"]
 server = ["dioxus/server", "database"]
 
 database = ["dep:sqlx", "dep:hmac-sha256"]
-
-##desktop_fix = ["dep:zvariant"]
-desktop_fix = []
 
 backend_delay = []
 backend_homedir = ["database"]
