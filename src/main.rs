@@ -11,16 +11,16 @@ fn main() {
     // IP="0.0.0.0" PORT=8080 ./server
 
     #[cfg(not(debug_assertions))]
-    let level = dioxus_logger::tracing::Level::INFO;
+    let level = dioxus::logger::tracing::Level::INFO;
     #[cfg(debug_assertions)]
-    let level = dioxus_logger::tracing::Level::DEBUG;
-    dioxus_logger::init(level).expect("failed to init logger");
+    let level = dioxus::logger::tracing::Level::DEBUG;
+    dioxus::logger::init(level).expect("failed to init logger");
 
     #[cfg(not(debug_assertions))]
     #[cfg(any(feature = "desktop", feature = "mobile"))]
     {
         let backend_url = "https://aki.omusubi.org/broinfo";
-        dioxus_fullstack::set_server_url(backend_url);
+        dioxus::fullstack::set_server_url(backend_url);
     }
 
     dioxus::launch(App);

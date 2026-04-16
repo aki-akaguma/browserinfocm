@@ -42,6 +42,7 @@ pub fn BrowserInfoCm(mut props: BrowserInfoProps) -> Element {
 }
 
 pub async fn get_browserinfo(bicmid: String, user: String) -> Result<(BroInfo, Browser)> {
+    use browserinfo::FromJsonStr;
     //
     #[cfg(feature = "backend_user_agent")]
     {

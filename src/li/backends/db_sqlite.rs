@@ -105,14 +105,14 @@ fn data_dir_on_desktop() -> PathBuf {
 pub async fn get_db_path() -> Result<String> {
     let db_path = get_db_path_();
     let db_path_s = db_path.display().to_string();
-    dioxus_logger::tracing::debug!("db_path: {db_path_s:?}");
+    dioxus::logger::tracing::debug!("db_path: {db_path_s:?}");
     Ok(db_path_s)
 }
 
 #[post("/api/v1/ringo1", headers: dioxus::fullstack::HeaderMap)]
 pub async fn get_ip_address() -> Result<String> {
     let ipaddr = get_ip_address_string(&headers);
-    dioxus_logger::tracing::debug!("ipaddr: {ipaddr:?}");
+    dioxus::logger::tracing::debug!("ipaddr: {ipaddr:?}");
     Ok(ipaddr)
 }
 
@@ -219,7 +219,7 @@ pub async fn save_broinfo(
         break;
     }
     //
-    dioxus_logger::tracing::debug!("save_broinfo: {jsinfo_ss:?}");
+    dioxus::logger::tracing::debug!("save_broinfo: {jsinfo_ss:?}");
     //
     #[cfg(feature = "backend_delay")]
     let _ = sleep_x(2000).await;
