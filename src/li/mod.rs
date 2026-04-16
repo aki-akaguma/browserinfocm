@@ -30,9 +30,6 @@ pub fn BrowserInfoCm(mut props: BrowserInfoProps) -> Element {
     use_future(move || async move {
         let bicmid = get_or_create_bicmid().await.unwrap();
         props.bicmid.set(bicmid.clone());
-
-        async_sleep_aki::async_sleep(0).await;
-
         let (broinfo, browser) = get_browserinfo(bicmid, (props.user)()).await.unwrap();
         props.broinfo.set(broinfo);
         props.browser.set(browser);
@@ -71,16 +68,14 @@ async fn get_or_create_bicmid() -> Result<String> {
     // check 'localStrage'
     let v =
         document::eval(r#"{var r=false;if('localStorage' in window){r=true}return r;}"#).await?;
-    let s = v.to_string();
-    if &s != "true" {
+    if !v.as_bool().unwrap_or(false) {
         return Ok("".to_string());
     }
     // get from localStrage
-    let js_get: &str = r#"{var r='';const rr=window.localStorage.getItem('anon_bicmid');if(rr!=null){r=rr;}return r;}"#;
+    let js_get: &str = r#"{return window.localStorage.getItem('anon_bicmid');}"#;
     let v = document::eval(js_get).await?;
-    let s = v.to_string();
-    //dioxus_logger::tracing::debug!("{s:?}");
-    let ss = s.trim_matches('"');
+    let ss = v.as_str().unwrap_or("");
+    //dioxus::logger::tracing::debug!("anon_bicmid: '{ss}'");
     if !ss.is_empty() {
         Ok(ss.to_string())
     } else {
@@ -90,8 +85,7 @@ async fn get_or_create_bicmid() -> Result<String> {
         // set into localStrage
         let js_set =
             format!(r#"{{window.localStorage.setItem('anon_bicmid','{uuid_s}');return '';}}"#);
-        let v = document::eval(&js_set).await?;
-        let _ = v.to_string();
+        let _v = document::eval(&js_set).await?;
         Ok(uuid_s)
     }
 }

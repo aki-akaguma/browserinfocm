@@ -88,7 +88,7 @@ fn data_dir() -> PathBuf {
 #[cfg(feature = "backend_homedir")]
 #[cfg(feature = "server")]
 fn data_dir_on_desktop() -> PathBuf {
-    let mut data_dir = match std::env::home_dir() {
+    let mut data_dir = match dirs::home_dir() {
         Some(home) => home,
         None => {
             eprintln!("could NOT get `home_dir()`");
@@ -124,17 +124,12 @@ pub async fn save_user_agent(ua: UserAgent) -> Result<()> {
     #[cfg(feature = "backend_text")]
     write_backend_text("user_agent.txt", ua_s)?;
     //
-    loop {
+    {
         let mut tx = DB.begin().await?;
         //
-        let user_agent_id = get_or_store_user_agent(&mut tx, ua_s).await?;
-        if user_agent_id == -1 {
-            tx.rollback().await?;
-            break;
-        }
+        let _user_agent_id = get_or_store_user_agent(&mut tx, ua_s).await?;
         //
         tx.commit().await?;
-        break;
     }
     //
     dioxus_logger::tracing::debug!("save_user_agent: {ua_s:?}");
@@ -162,44 +157,15 @@ pub async fn save_broinfo(
     #[cfg(feature = "backend_text")]
     write_backend_text("jsinfo.txt", &jsinfo_s)?;
     //
-    loop {
+    {
         let mut tx: Transaction<'_, sqlx::Sqlite> = DB.begin().await?;
         //
         let user_agent_id = get_or_store_user_agent(&mut tx, user_agent.get()).await?;
-        if user_agent_id == -1 {
-            tx.rollback().await?;
-            break;
-        }
-        //
         let referrer_id = get_or_store_referrer(&mut tx, referrer.get()).await?;
-        if referrer_id == -1 {
-            tx.rollback().await?;
-            break;
-        }
-        //
         let ip_address_id = get_or_store_ip_address(&mut tx, &ip_address).await?;
-        if ip_address_id == -1 {
-            tx.rollback().await?;
-            break;
-        }
-        //
         let bicmid_id = get_or_store_bicmid(&mut tx, &bicmid).await?;
-        if bicmid_id == -1 {
-            tx.rollback().await?;
-            break;
-        }
-        //
         let user_id = get_or_store_user(&mut tx, &user).await?;
-        if user_id == -1 {
-            tx.rollback().await?;
-            break;
-        }
-        //
         let jsinfo_id = get_or_store_jsinfo(&mut tx, &jsinfo_ss).await?;
-        if jsinfo_id == -1 {
-            tx.rollback().await?;
-            break;
-        }
         //
         sqlx::query(concat!(
             r#"INSERT INTO logs"#,
@@ -216,7 +182,6 @@ pub async fn save_broinfo(
         .await?;
         //
         tx.commit().await?;
-        break;
     }
     //
     dioxus::logger::tracing::debug!("save_broinfo: {jsinfo_ss:?}");

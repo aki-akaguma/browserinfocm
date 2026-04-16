@@ -18,17 +18,13 @@ pub use debug::*;
 #[allow(unused)]
 #[cfg(feature = "server")]
 pub fn get_ip_address_string(headers: &dioxus::fullstack::HeaderMap) -> String {
-    let ip = if let Some(s) = headers.get("x-forwarded-for") {
-        // format:
-        //     X-Forwarded-For: client1, proxy1, proxy2, ...
-        let ss = s.to_str().unwrap();
-        if let Some(idx) = ss.find(',') {
-            ss[..idx].to_string()
-        } else {
-            ss.to_string()
-        }
-    } else {
-        "".to_string()
-    };
-    ip
+    use std::net::IpAddr;
+    headers
+        .get("x-forwarded-for")
+        .and_then(|v| v.to_str().ok())
+        .and_then(|s| s.split(',').next())
+        .map(|s| s.trim())
+        .filter(|s| s.parse::<IpAddr>().is_ok())
+        .unwrap_or("")
+        .to_string()
 }

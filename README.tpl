@@ -10,6 +10,12 @@
 
 {{readme}}
 
+## Patches
+### dioxus-fullstack (0.7.5)
+- **File:** \`patches/dioxus-fullstack+0.7.5.patch\`
+- **Reason:** Fixed an issue where URL construction was incorrect when \`get_server_url()\` returned a relative path (starting with \`/\`). This ensures stability in environments where the server URL is dynamically configured, such as mobile or specific deployment setups.
+
+
 # Changelogs
 
 [This crate's changelog here.](https://github.com/aki-akaguma/{{crate}}/blob/main/CHANGELOG.md)

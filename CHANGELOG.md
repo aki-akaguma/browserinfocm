@@ -7,8 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Changed
+* `get_ip_address_string()`: more safety
+* robustly handled `document::eval()` results
+* the global singleton state is used `std::sync::LazyLock<String>` at `src/li/backends/forwarder.rs`.
+* Refactored `save_broinfo()` and `save_user_agent()` to remove the redundant `loop` and `-1` checks.
+* Replaced `std::env::home_dir()` with the `dirs` crate.
 * `dioxus_logger` to `dioxus::logger`
 * update crate: browserinfo(0.1.7)
+
+### Removed
+* `async_sleep(0)` unless a specific race condition or execution order issue was observed.
 
 
 ## [0.1.16] (2026-04-11)
