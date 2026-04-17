@@ -7,6 +7,22 @@ use browserinfo::{user_agent_js, UserAgent};
 
 mod backends;
 
+use serde::{Deserialize, Serialize};
+
+#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
+pub struct SaveBroInfoRequest {
+    pub broinfo: BroInfo,
+    pub bicmid: String,
+    pub user: String,
+    pub return_browser: bool,
+}
+
+#[cfg(feature = "backend_user_agent")]
+#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
+pub struct SaveUserAgentRequest {
+    pub ua: UserAgent,
+}
+
 #[cfg(feature = "server")]
 #[allow(unused_imports)]
 pub use backends::get_ip_address_string;
@@ -28,11 +44,19 @@ pub struct BrowserInfoProps {
 #[component]
 pub fn BrowserInfoCm(mut props: BrowserInfoProps) -> Element {
     use_future(move || async move {
-        let bicmid = get_or_create_bicmid().await.unwrap();
-        props.bicmid.set(bicmid.clone());
-        let (broinfo, browser) = get_browserinfo(bicmid, (props.user)()).await.unwrap();
-        props.broinfo.set(broinfo);
-        props.browser.set(browser);
+        match get_or_create_bicmid().await {
+            Ok(bicmid) => {
+                props.bicmid.set(bicmid.clone());
+                match get_browserinfo(bicmid, (props.user)()).await {
+                    Ok((broinfo, browser)) => {
+                        props.broinfo.set(broinfo);
+                        props.browser.set(browser);
+                    }
+                    Err(e) => dioxus::logger::tracing::error!("Failed to get browser info: {e}"),
+                }
+            }
+            Err(e) => dioxus::logger::tracing::error!("Failed to get or create bicmid: {e}"),
+        }
     });
 
     rsx! {}
@@ -45,20 +69,27 @@ pub async fn get_browserinfo(bicmid: String, user: String) -> Result<(BroInfo, B
     {
         let js_ua: &str = user_agent_js();
         let v = document::eval(js_ua).await?;
+        //let s = v.as_str().unwrap_or("");
         let s = v.to_string();
         dioxus::logger::tracing::debug!("Raw JSON from JS: {s}");
         let user_agent = UserAgent::from_json_str(&s)?;
-        let _ = backends::save_user_agent(user_agent).await;
+        let _ = backends::save_user_agent(SaveUserAgentRequest { ua: user_agent }).await;
     }
     //
     let js_bro: &str = broinfo_js();
     let v = document::eval(js_bro).await?;
+    //let s = v.as_str().unwrap_or("");
     let s = v.to_string();
     dioxus::logger::tracing::debug!("Raw JSON from JS: {s}");
     let broinfo = BroInfo::from_json_str(&s)?;
-    let browser = backends::save_broinfo(broinfo.clone(), bicmid, user, true)
-        .await?
-        .unwrap();
+    let browser = backends::save_broinfo(SaveBroInfoRequest {
+        broinfo: broinfo.clone(),
+        bicmid,
+        user,
+        return_browser: true,
+    })
+    .await?
+    .unwrap();
     Ok((broinfo, browser))
 }
 

@@ -8,6 +8,10 @@ mod forwarder;
 #[cfg(feature = "backend_next")]
 pub use forwarder::*;
 
+pub use super::SaveBroInfoRequest;
+#[cfg(feature = "backend_user_agent")]
+pub use super::SaveUserAgentRequest;
+
 #[allow(unused)]
 #[cfg(feature = "server")]
 pub fn get_ip_address_string(headers: &dioxus::fullstack::HeaderMap) -> String {

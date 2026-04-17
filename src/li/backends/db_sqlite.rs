@@ -1,5 +1,5 @@
 use anyhow::Result;
-use browserinfo::{BroInfo, Browser};
+use browserinfo::Browser;
 use dioxus::prelude::*;
 
 #[cfg(feature = "backend_user_agent")]
@@ -118,8 +118,8 @@ pub async fn get_ip_address() -> Result<String> {
 
 #[cfg(feature = "backend_user_agent")]
 #[post("/api/v1/useragent1")]
-pub async fn save_user_agent(ua: UserAgent) -> Result<()> {
-    let ua_s = ua.get().trim_start_matches('"').trim_end_matches('"');
+pub async fn save_user_agent(req: super::SaveUserAgentRequest) -> Result<()> {
+    let ua_s = req.ua.get();
     //
     #[cfg(feature = "backend_text")]
     write_backend_text("user_agent.txt", ua_s)?;
@@ -141,17 +141,12 @@ pub async fn save_user_agent(ua: UserAgent) -> Result<()> {
 }
 
 #[post("/api/v1/browserinfo1", headers: dioxus::fullstack::HeaderMap)]
-pub async fn save_broinfo(
-    broinfo: BroInfo,
-    bicmid: String,
-    user: String,
-    return_browser: bool,
-) -> Result<Option<Browser>> {
+pub async fn save_broinfo(req: super::SaveBroInfoRequest) -> Result<Option<Browser>> {
     let ip_address = get_ip_address_string(&headers);
-    let user_agent = broinfo.basic.user_agent.clone();
-    let referrer = broinfo.basic.referrer.clone();
+    let user_agent = req.broinfo.basic.user_agent.clone();
+    let referrer = req.broinfo.basic.referrer.clone();
 
-    let jsinfo_s = toml::to_string(&broinfo.jsinfo).unwrap();
+    let jsinfo_s = toml::to_string(&req.broinfo.jsinfo).unwrap();
 
     // Convert line breaks to <BR> and save based on DB display specifications.
     // When extracting it, you can use .replace("<BR>", "\n") to parse it as TOML.
@@ -166,8 +161,8 @@ pub async fn save_broinfo(
         let user_agent_id = get_or_store_user_agent(&mut tx, user_agent.get()).await?;
         let referrer_id = get_or_store_referrer(&mut tx, referrer.get()).await?;
         let ip_address_id = get_or_store_ip_address(&mut tx, &ip_address).await?;
-        let bicmid_id = get_or_store_bicmid(&mut tx, &bicmid).await?;
-        let user_id = get_or_store_user(&mut tx, &user).await?;
+        let bicmid_id = get_or_store_bicmid(&mut tx, &req.bicmid).await?;
+        let user_id = get_or_store_user(&mut tx, &req.user).await?;
         let jsinfo_id = get_or_store_jsinfo(&mut tx, &jsinfo_ss).await?;
         //
         sqlx::query(concat!(
@@ -192,8 +187,8 @@ pub async fn save_broinfo(
     #[cfg(feature = "backend_delay")]
     let _ = sleep_x(2000).await;
     //
-    if return_browser {
-        Ok(Some(broinfo.to_browser()?))
+    if req.return_browser {
+        Ok(Some(req.broinfo.to_browser()?))
     } else {
         Ok(None)
     }

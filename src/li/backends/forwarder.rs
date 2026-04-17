@@ -70,21 +70,15 @@ pub async fn get_ipaddr() -> Result<String> {
 
 #[cfg(feature = "backend_user_agent")]
 #[post("/api/v1/useragent1")]
-pub async fn save_user_agent(ua: UserAgent) -> Result<()> {
+pub async fn save_user_agent(req: super::SaveUserAgentRequest) -> Result<()> {
     let base_url = NEXT_URL.as_ref().map_err(|e| anyhow::anyhow!(e.clone()))?;
     let url_s = format!("{}/api/v1/useragent1", base_url);
-
-    #[derive(Serialize, Deserialize, Debug, Default, Clone)]
-    struct UserAgentProps {
-        pub ua: UserAgent,
-    }
-    let a_props = UserAgentProps { ua };
 
     let _resp = CLIENT
         .post(&url_s)
         .header("x-request-client", "dioxus")
         .timeout(Duration::from_millis(5000))
-        .json(&a_props)
+        .json(&req)
         .send()
         .await?;
     //dioxus_logger::tracing::info!("save_user_agent next: {_res:?}");
@@ -92,34 +86,15 @@ pub async fn save_user_agent(ua: UserAgent) -> Result<()> {
 }
 
 #[post("/api/v1/browserinfo1")]
-pub async fn save_broinfo(
-    broinfo: BroInfo,
-    bicmid: String,
-    user: String,
-    return_browser: bool,
-) -> Result<Option<Browser>> {
+pub async fn save_broinfo(req: super::SaveBroInfoRequest) -> Result<Option<Browser>> {
     let base_url = NEXT_URL.as_ref().map_err(|e| anyhow::anyhow!(e.clone()))?;
     let url_s = format!("{}/api/v1/browserinfo1", base_url);
-
-    #[derive(Serialize, Deserialize, Debug, Default, Clone)]
-    struct BroInfoProps {
-        pub broinfo: BroInfo,
-        pub bicmid: String,
-        pub user: String,
-        pub return_browser: bool,
-    }
-    let a_props = BroInfoProps {
-        broinfo,
-        bicmid,
-        user,
-        return_browser,
-    };
 
     let resp = CLIENT
         .post(&url_s)
         .header("x-request-client", "dioxus")
         .timeout(Duration::from_millis(5000))
-        .json(&a_props)
+        .json(&req)
         .send()
         .await?
         .json::<Option<Browser>>()

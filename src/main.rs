@@ -33,39 +33,30 @@ fn main() {
 #[component]
 fn App() -> Element {
     rsx! {
-        MyStyle {}
         BroInfoHome {}
     }
-}
-
-#[component]
-fn MyStyle() -> Element {
-    rsx! {}
 }
 
 #[component]
 fn BroInfoHome() -> Element {
     let mut db_path_sig = use_signal(String::new);
     use_future(move || async move {
-        let s = li::get_db_path().await;
-        db_path_sig.set(s.unwrap());
+        match li::get_db_path().await {
+            Ok(s) => db_path_sig.set(s),
+            Err(e) => dioxus::logger::tracing::error!("Failed to get DB path: {e}"),
+        }
     });
-    let db_path_s = format!("{:?}", db_path_sig.read().clone());
+    let db_path_s = db_path_sig.read().clone();
 
     let broinfo_sig = use_signal(BroInfo::default);
     let browser_sig = use_signal(Browser::default);
     let bicmid_sig = use_signal(String::new);
     let user_sig = use_signal(String::new);
 
-    let brg = browser_sig.read().clone();
-    let bim = broinfo_sig.read().clone();
-    let brg_s = format!("{:?}", brg);
-    let bim_s = format!("{:?}", bim);
-
-    let bicmid = bicmid_sig.read().clone();
-    let bicmid_s = format!("{:?}", bicmid);
-    let user = user_sig.read().clone();
-    let user_s = format!("{:?}", user);
+    let brg_s = format!("{:?}", browser_sig.read());
+    let bim_s = format!("{:?}", broinfo_sig.read());
+    let bicmid_s = bicmid_sig.read().clone();
+    let user_s = user_sig.read().clone();
 
     rsx! {
         BrowserInfoCm {
@@ -74,13 +65,17 @@ fn BroInfoHome() -> Element {
             bicmid: bicmid_sig,
             user: user_sig,
         }
-        div { "{db_path_s}" }
-        div { "{brg_s}" }
-        div {}
-        div { "{bim_s}" }
-        div {}
-        div { "{bicmid_s}" }
-        div {}
-        div { "{user_s}" }
+        div {
+            h3 { "System Information" }
+            div { "Database: {db_path_s}" }
+            div { "Browser Info (Condensed): {brg_s}" }
+            hr {}
+            h3 { "Session Details" }
+            div { "BICMID: {bicmid_s}" }
+            div { "User: {user_s}" }
+            hr {}
+            h3 { "Full Browser Information" }
+            div { "{bim_s}" }
+        }
     }
 }
