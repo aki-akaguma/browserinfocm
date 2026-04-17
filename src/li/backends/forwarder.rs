@@ -18,25 +18,30 @@ use std::time::Duration;
 use reqwest;
 
 #[cfg(feature = "server")]
-pub static NEXT_URL: LazyLock<String> = LazyLock::new(|| {
-    //let url = "http://aki-desktop.local:8080";
-    match std::env::var("NEXT_URL") {
-        Ok(val) => match val.strip_suffix("/") {
-            Some(val2) => val2.to_string(),
-            None => val.to_string(),
-        },
-        Err(_e) => "Not found env: NEXT_URL".to_string(),
-    }
+pub static NEXT_URL: LazyLock<Result<String, String>> = LazyLock::new(|| {
+    // NEXT_URL: "http://aki-desktop.local:8080/"
+    std::env::var("NEXT_URL")
+        .map(|val| val.trim_end_matches('/').to_string())
+        .map_err(|_| {
+            "Environment variable 'NEXT_URL' is not set. Please set it to the target backend URL."
+                .to_string()
+        })
+});
+
+#[cfg(feature = "server")]
+pub static CLIENT: LazyLock<reqwest::Client> = LazyLock::new(|| {
+    reqwest::Client::builder()
+        .connect_timeout(Duration::from_millis(1000))
+        .build()
+        .expect("Failed to create reqwest client")
 });
 
 #[post("/api/v1/mikan1")]
 pub async fn get_db_path() -> Result<String> {
-    let url_s = format!("{}/api/v1/mikan1", NEXT_URL.as_str());
+    let base_url = NEXT_URL.as_ref().map_err(|e| anyhow::anyhow!(e.clone()))?;
+    let url_s = format!("{}/api/v1/mikan1", base_url);
 
-    let client = reqwest::Client::builder()
-        .connect_timeout(Duration::from_millis(1000))
-        .build()?;
-    let resp = client
+    let resp = CLIENT
         .post(&url_s)
         .header("x-request-client", "dioxus")
         .timeout(Duration::from_millis(5000))
@@ -49,12 +54,10 @@ pub async fn get_db_path() -> Result<String> {
 
 #[post("/api/v1/ringo1")]
 pub async fn get_ipaddr() -> Result<String> {
-    let url_s = format!("{}/api/v1/ringo1", NEXT_URL.as_str());
+    let base_url = NEXT_URL.as_ref().map_err(|e| anyhow::anyhow!(e.clone()))?;
+    let url_s = format!("{}/api/v1/ringo1", base_url);
 
-    let client = reqwest::Client::builder()
-        .connect_timeout(Duration::from_millis(1000))
-        .build()?;
-    let resp = client
+    let resp = CLIENT
         .post(&url_s)
         .header("x-request-client", "dioxus")
         .timeout(Duration::from_millis(5000))
@@ -68,7 +71,8 @@ pub async fn get_ipaddr() -> Result<String> {
 #[cfg(feature = "backend_user_agent")]
 #[post("/api/v1/useragent1")]
 pub async fn save_user_agent(ua: UserAgent) -> Result<()> {
-    let url_s = format!("{}/api/v1/useragent1", NEXT_URL.as_str());
+    let base_url = NEXT_URL.as_ref().map_err(|e| anyhow::anyhow!(e.clone()))?;
+    let url_s = format!("{}/api/v1/useragent1", base_url);
 
     #[derive(Serialize, Deserialize, Debug, Default, Clone)]
     struct UserAgentProps {
@@ -76,10 +80,7 @@ pub async fn save_user_agent(ua: UserAgent) -> Result<()> {
     }
     let a_props = UserAgentProps { ua };
 
-    let client = reqwest::Client::builder()
-        .connect_timeout(Duration::from_millis(1000))
-        .build()?;
-    let _res = client
+    let _resp = CLIENT
         .post(&url_s)
         .header("x-request-client", "dioxus")
         .timeout(Duration::from_millis(5000))
@@ -97,7 +98,8 @@ pub async fn save_broinfo(
     user: String,
     return_browser: bool,
 ) -> Result<Option<Browser>> {
-    let url_s = format!("{}/api/v1/browserinfo1", NEXT_URL.as_str());
+    let base_url = NEXT_URL.as_ref().map_err(|e| anyhow::anyhow!(e.clone()))?;
+    let url_s = format!("{}/api/v1/browserinfo1", base_url);
 
     #[derive(Serialize, Deserialize, Debug, Default, Clone)]
     struct BroInfoProps {
@@ -113,10 +115,7 @@ pub async fn save_broinfo(
         return_browser,
     };
 
-    let client = reqwest::Client::builder()
-        .connect_timeout(Duration::from_millis(1000))
-        .build()?;
-    let resp = client
+    let resp = CLIENT
         .post(&url_s)
         .header("x-request-client", "dioxus")
         .timeout(Duration::from_millis(5000))

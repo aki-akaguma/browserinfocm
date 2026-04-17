@@ -152,7 +152,10 @@ pub async fn save_broinfo(
     let referrer = broinfo.basic.referrer.clone();
 
     let jsinfo_s = toml::to_string(&broinfo.jsinfo).unwrap();
-    let jsinfo_ss = jsinfo_s.replace("\n", "<BR>");
+
+    // Convert line breaks to <BR> and save based on DB display specifications.
+    // When extracting it, you can use .replace("<BR>", "\n") to parse it as TOML.
+    let jsinfo_ss = jsinfo_s.replace("\r\n", "<BR>").replace("\n", "<BR>");
 
     #[cfg(feature = "backend_text")]
     write_backend_text("jsinfo.txt", &jsinfo_s)?;
@@ -250,23 +253,21 @@ async fn create_tables(pool: &sqlx::sqlite::SqlitePool) -> Result<()> {
 macro_rules! simple_get_or_store {
     ($func:ident, $tbl: expr) => {
         async fn $func(tx: &mut sqlx::Transaction<'_, sqlx::Sqlite>, val: &str) -> Result<i64> {
-            let mut tbl_id = -1;
-            let r = sqlx::query(concat!(r#"SELECT id FROM "#, $tbl, r#" WHERE value = ?"#))
+            match sqlx::query(concat!(r#"SELECT id FROM "#, $tbl, r#" WHERE value = ?"#))
                 .bind(val)
                 .fetch_one(&mut **tx)
-                .await;
-            if let Ok(row) = r {
-                tbl_id = row.get(0);
-            } else if let Err(sqlx::Error::RowNotFound) = r {
-                let r = sqlx::query(concat!(r#"INSERT INTO "#, $tbl, r#" (value) VALUES (?)"#))
-                    .bind(val)
-                    .execute(&mut **tx)
-                    .await?;
-                tbl_id = r.last_insert_rowid();
-            } else if let Err(e) = r {
-                return Err(e.into());
+                .await
+            {
+                Ok(row) => Ok(row.get(0)),
+                Err(sqlx::Error::RowNotFound) => {
+                    let r = sqlx::query(concat!(r#"INSERT INTO "#, $tbl, r#" (value) VALUES (?)"#))
+                        .bind(val)
+                        .execute(&mut **tx)
+                        .await?;
+                    Ok(r.last_insert_rowid())
+                }
+                Err(e) => Err(e.into()),
             }
-            Ok(tbl_id)
         }
     };
 }

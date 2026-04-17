@@ -19,8 +19,12 @@ fn main() {
     #[cfg(not(debug_assertions))]
     #[cfg(any(feature = "desktop", feature = "mobile"))]
     {
-        let backend_url = "https://aki.omusubi.org/broinfo";
-        dioxus::fullstack::set_server_url(backend_url);
+        let backend_url = std::env::var("BROWSERINFOCM_SERVER_URL")
+            .ok()
+            .or(option_env!("BROWSERINFOCM_SERVER_URL").map(|s| s.to_string()))
+            .unwrap_or_else(|| "https://aki.omusubi.org/broinfo".to_string());
+        let static_url: &'static str = Box::leak(backend_url.into_boxed_str());
+        dioxus::fullstack::set_server_url(static_url);
     }
 
     dioxus::launch(App);
