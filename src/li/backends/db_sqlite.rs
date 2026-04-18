@@ -1,3 +1,6 @@
+//! SQLite backend implementation for storing browser information.
+//! Handles database initialization, table creation, and data persistence.
+
 use anyhow::Result;
 use browserinfo::Browser;
 use dioxus::prelude::*;
@@ -20,13 +23,15 @@ use sqlx::Row;
 #[cfg(feature = "server")]
 use dioxus::fullstack::Lazy;
 
-// The database is only available to server code
+/// Global SQLite database pool, initialized lazily on the server.
 #[cfg(feature = "server")]
 static DB: Lazy<sqlx::SqlitePool> = Lazy::new(|| async move {
     let pool = create_sqlx_pool().await?;
     dioxus::Ok(pool)
 });
 
+/// Creates and initializes the SQLite connection pool.
+/// Also runs migrations (table creation) if necessary.
 #[cfg(feature = "server")]
 async fn create_sqlx_pool() -> Result<sqlx::sqlite::SqlitePool> {
     use sqlx::sqlite::SqliteConnectOptions;
@@ -46,6 +51,7 @@ async fn create_sqlx_pool() -> Result<sqlx::sqlite::SqlitePool> {
     Ok(pool)
 }
 
+/// Resolves the database file path based on environment variables or defaults.
 #[cfg(feature = "server")]
 fn get_db_path_() -> PathBuf {
     let key1 = "BROWSERINFOCM_DB_PATH";
@@ -70,6 +76,7 @@ fn get_db_path_() -> PathBuf {
     data_dir
 }
 
+/// Returns the base directory for data storage.
 #[cfg(feature = "server")]
 fn data_dir() -> PathBuf {
     let data_dir: PathBuf;
@@ -85,6 +92,7 @@ fn data_dir() -> PathBuf {
     return data_dir;
 }
 
+/// Returns the data directory within the user's home directory.
 #[cfg(feature = "backend_homedir")]
 #[cfg(feature = "server")]
 fn data_dir_on_desktop() -> PathBuf {
@@ -101,6 +109,7 @@ fn data_dir_on_desktop() -> PathBuf {
     data_dir
 }
 
+/// Server function to get the current database path as a string.
 #[post("/api/v1/mikan1")]
 pub async fn get_db_path() -> Result<String> {
     let db_path = get_db_path_();
@@ -109,6 +118,7 @@ pub async fn get_db_path() -> Result<String> {
     Ok(db_path_s)
 }
 
+/// Server function to get the client's IP address.
 #[post("/api/v1/ringo1", headers: dioxus::fullstack::HeaderMap)]
 pub async fn get_ip_address() -> Result<String> {
     let ipaddr = get_ip_address_string(&headers);
@@ -116,6 +126,7 @@ pub async fn get_ip_address() -> Result<String> {
     Ok(ipaddr)
 }
 
+/// Server function to save the user agent to the database.
 #[cfg(feature = "backend_user_agent")]
 #[post("/api/v1/useragent1")]
 pub async fn save_user_agent(req: super::SaveUserAgentRequest) -> Result<()> {
@@ -140,6 +151,9 @@ pub async fn save_user_agent(req: super::SaveUserAgentRequest) -> Result<()> {
     Ok(())
 }
 
+/// Server function to save full browser information to the database.
+/// 
+/// Normalizes and stores JS info, User Agent, Referrer, IP Address, BICMID, and User ID.
 #[post("/api/v1/browserinfo1", headers: dioxus::fullstack::HeaderMap)]
 pub async fn save_broinfo(req: super::SaveBroInfoRequest) -> Result<Option<Browser>> {
     let ip_address = get_ip_address_string(&headers);
@@ -194,6 +208,7 @@ pub async fn save_broinfo(req: super::SaveBroInfoRequest) -> Result<Option<Brows
     }
 }
 
+/// Appends data to a text file. Used when `backend_text` feature is enabled.
 #[cfg(feature = "backend_text")]
 #[cfg(feature = "server")]
 fn write_backend_text(fnm: &str, data: &str) -> Result<()> {
@@ -210,6 +225,7 @@ fn write_backend_text(fnm: &str, data: &str) -> Result<()> {
     Ok(())
 }
 
+/// Sleeps for a specified duration. Used for testing delays when `backend_delay` is enabled.
 #[cfg(feature = "backend_delay")]
 #[cfg(feature = "server")]
 async fn sleep_x(millis: u64) -> Result<()> {
@@ -218,13 +234,13 @@ async fn sleep_x(millis: u64) -> Result<()> {
     Ok(())
 }
 
-// Create tables if it doesn't already exist
+/// Ensures required tables exist in the SQLite database.
 #[cfg(feature = "server")]
 async fn create_tables(pool: &sqlx::sqlite::SqlitePool) -> Result<()> {
     const SQL: &str = include_str!("../../../migrations/20260107001015_create-tables.up.sql");
     sqlx::raw_sql(SQL).execute(pool).await?;
     //
-    // `JsInfo` special data
+    // `JsInfo` special data for ID 0
     {
         let s = "";
         let hash = create_jsinfo_hash(s);
@@ -244,6 +260,7 @@ async fn create_tables(pool: &sqlx::sqlite::SqlitePool) -> Result<()> {
     Ok(())
 }
 
+/// Macro to generate functions that either fetch an existing ID or store a new value and return its ID.
 #[cfg(feature = "server")]
 macro_rules! simple_get_or_store {
     ($func:ident, $tbl: expr) => {
@@ -282,6 +299,8 @@ simple_get_or_store!(get_or_store_bicmid, "bicmids");
 #[cfg(feature = "server")]
 simple_get_or_store!(get_or_store_user, "users");
 
+/// Retrieves or stores JS information in the database.
+/// Uses a hash to optimize lookup.
 #[cfg(feature = "server")]
 async fn get_or_store_jsinfo(
     tx: &mut sqlx::Transaction<'_, sqlx::Sqlite>,
@@ -310,6 +329,7 @@ async fn get_or_store_jsinfo(
     Ok(jsinfo_id)
 }
 
+/// Creates a SHA-256 hash of the JS info string and encodes it in Base64.
 #[cfg(feature = "server")]
 fn create_jsinfo_hash(s: &str) -> String {
     use base64::Engine;

@@ -1,3 +1,6 @@
+//! Backend module for handling data persistence.
+//! Switches between local SQLite storage and remote forwarding based on feature flags.
+
 #[cfg(not(feature = "backend_next"))]
 mod db_sqlite;
 #[cfg(not(feature = "backend_next"))]
@@ -12,6 +15,9 @@ pub use super::SaveBroInfoRequest;
 #[cfg(feature = "backend_user_agent")]
 pub use super::SaveUserAgentRequest;
 
+/// Extracts the client's IP address from HTTP headers.
+/// 
+/// Specifically looks for the `x-forwarded-for` header to handle requests behind a proxy.
 #[allow(unused)]
 #[cfg(feature = "server")]
 pub fn get_ip_address_string(headers: &dioxus::fullstack::HeaderMap) -> String {

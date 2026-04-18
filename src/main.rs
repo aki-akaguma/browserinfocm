@@ -1,3 +1,6 @@
+//! Entry point for the browserinfocm application.
+//! Sets up the logger, server URL, and launches the Dioxus app.
+
 use dioxus::prelude::*;
 
 mod li;
@@ -16,6 +19,7 @@ fn main() {
     let level = dioxus::logger::tracing::Level::DEBUG;
     dioxus::logger::init(level).expect("failed to init logger");
 
+    // Configure the server URL for desktop/mobile builds to connect to the backend.
     #[cfg(not(debug_assertions))]
     #[cfg(any(feature = "desktop", feature = "mobile"))]
     {
@@ -30,6 +34,7 @@ fn main() {
     dioxus::launch(App);
 }
 
+/// The root component of the application.
 #[component]
 fn App() -> Element {
     rsx! {
@@ -37,6 +42,7 @@ fn App() -> Element {
     }
 }
 
+/// A demonstration component that displays gathered browser information.
 #[component]
 fn BroInfoHome() -> Element {
     let mut db_path_sig = use_signal(String::new);

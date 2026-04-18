@@ -1,3 +1,6 @@
+//! Forwarder backend implementation.
+//! Relays browser information requests to another server specified by `NEXT_URL`.
+
 use anyhow::Result;
 use browserinfo::{BroInfo, Browser};
 use dioxus::prelude::*;
@@ -17,6 +20,7 @@ use std::time::Duration;
 #[cfg(feature = "server")]
 use reqwest;
 
+/// The target URL for forwarding requests, loaded from the `NEXT_URL` environment variable.
 #[cfg(feature = "server")]
 pub static NEXT_URL: LazyLock<Result<String, String>> = LazyLock::new(|| {
     // NEXT_URL: "http://aki-desktop.local:8080/"
@@ -28,6 +32,7 @@ pub static NEXT_URL: LazyLock<Result<String, String>> = LazyLock::new(|| {
         })
 });
 
+/// Shared HTTP client for forwarding requests.
 #[cfg(feature = "server")]
 pub static CLIENT: LazyLock<reqwest::Client> = LazyLock::new(|| {
     reqwest::Client::builder()
@@ -36,6 +41,7 @@ pub static CLIENT: LazyLock<reqwest::Client> = LazyLock::new(|| {
         .expect("Failed to create reqwest client")
 });
 
+/// Forwards the database path request to the next backend.
 #[post("/api/v1/mikan1")]
 pub async fn get_db_path() -> Result<String> {
     let base_url = NEXT_URL.as_ref().map_err(|e| anyhow::anyhow!(e.clone()))?;
@@ -52,6 +58,7 @@ pub async fn get_db_path() -> Result<String> {
     Ok(resp)
 }
 
+/// Forwards the IP address request to the next backend.
 #[post("/api/v1/ringo1")]
 pub async fn get_ipaddr() -> Result<String> {
     let base_url = NEXT_URL.as_ref().map_err(|e| anyhow::anyhow!(e.clone()))?;
@@ -68,6 +75,7 @@ pub async fn get_ipaddr() -> Result<String> {
     Ok(resp)
 }
 
+/// Forwards the user agent save request to the next backend.
 #[cfg(feature = "backend_user_agent")]
 #[post("/api/v1/useragent1")]
 pub async fn save_user_agent(req: super::SaveUserAgentRequest) -> Result<()> {
@@ -85,6 +93,7 @@ pub async fn save_user_agent(req: super::SaveUserAgentRequest) -> Result<()> {
     Ok(())
 }
 
+/// Forwards the full browser info save request to the next backend.
 #[post("/api/v1/browserinfo1")]
 pub async fn save_broinfo(req: super::SaveBroInfoRequest) -> Result<Option<Browser>> {
     let base_url = NEXT_URL.as_ref().map_err(|e| anyhow::anyhow!(e.clone()))?;

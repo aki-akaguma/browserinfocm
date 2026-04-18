@@ -56,6 +56,7 @@ server = ["dioxus/server", "browserinfocm/server"]
 + `BROWSERINFOCM_DB_BASE_PATH`:  ex.) `/var/local/mydata/broinfo`
 + `BROWSERINFOCM_DB_FILE`: ex.) `browserinfocm.db`
 */
+/// Internal module containing components and backends.
 mod li;
 pub use browserinfo;
 pub use li::*;

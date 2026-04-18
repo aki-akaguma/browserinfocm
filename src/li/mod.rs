@@ -1,3 +1,6 @@
+//! Main module for browser information management.
+//! Provides the Dioxus component and utilities for gathering and saving browser data.
+
 use anyhow::Result;
 use browserinfo::{broinfo_js, BroInfo, Browser};
 use dioxus::prelude::*;
@@ -9,17 +12,24 @@ mod backends;
 
 use serde::{Deserialize, Serialize};
 
+/// Request structure for saving browser information to the backend.
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
 pub struct SaveBroInfoRequest {
+    /// The detailed browser information gathered from the client.
     pub broinfo: BroInfo,
+    /// The anonymous browser identifier (BICMID).
     pub bicmid: String,
+    /// Custom user identifier string.
     pub user: String,
+    /// Whether to return the parsed Browser struct in the response.
     pub return_browser: bool,
 }
 
+/// Request structure for saving only the user agent string.
 #[cfg(feature = "backend_user_agent")]
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
 pub struct SaveUserAgentRequest {
+    /// The user agent information.
     pub ua: UserAgent,
 }
 
@@ -27,20 +37,21 @@ pub struct SaveUserAgentRequest {
 #[allow(unused_imports)]
 pub use backends::get_ip_address_string;
 
+/// Properties for the `BrowserInfoCm` component.
 #[derive(Props, Debug, Clone, PartialEq)]
 pub struct BrowserInfoProps {
-    //// `broinfo` is set by this package.
+    /// Signal to store the gathered `BroInfo`. Set by the component.
     broinfo: Signal<BroInfo>,
-    //// `browser` is set by this package.
+    /// Signal to store the parsed `Browser` information. Set by the component.
     browser: Signal<Browser>,
-    //// `bicmid` is a base64 encoded uuid stored in the browser's local storage.
-    //// `bicmid` is set by this package.
+    /// Signal to store the `bicmid` (anonymous identifier). Set by the component.
     bicmid: Signal<String>,
-    //// `user` can be used freely.
-    //// `user` is NOT set by this package. The value set to `user` is passed to the backend.
+    /// Signal for the user identifier. This is passed from the parent to the backend.
     user: Signal<String>,
 }
 
+/// A Dioxus component that automatically gathers browser information and an anonymous ID (BICMID).
+/// It persists this data to the configured backend on mount.
 #[component]
 pub fn BrowserInfoCm(mut props: BrowserInfoProps) -> Element {
     use_future(move || async move {
@@ -62,6 +73,9 @@ pub fn BrowserInfoCm(mut props: BrowserInfoProps) -> Element {
     rsx! {}
 }
 
+/// Gathers browser information using JavaScript execution and saves it to the backend.
+/// 
+/// Returns a tuple of `(BroInfo, Browser)` on success.
 pub async fn get_browserinfo(bicmid: String, user: String) -> Result<(BroInfo, Browser)> {
     use browserinfo::FromJsonStr;
     //
@@ -69,7 +83,6 @@ pub async fn get_browserinfo(bicmid: String, user: String) -> Result<(BroInfo, B
     {
         let js_ua: &str = user_agent_js();
         let v = document::eval(js_ua).await?;
-        //let s = v.as_str().unwrap_or("");
         let s = v.to_string();
         dioxus::logger::tracing::debug!("Raw JSON from JS: {s}");
         let user_agent = UserAgent::from_json_str(&s)?;
@@ -78,7 +91,6 @@ pub async fn get_browserinfo(bicmid: String, user: String) -> Result<(BroInfo, B
     //
     let js_bro: &str = broinfo_js();
     let v = document::eval(js_bro).await?;
-    //let s = v.as_str().unwrap_or("");
     let s = v.to_string();
     dioxus::logger::tracing::debug!("Raw JSON from JS: {s}");
     let broinfo = BroInfo::from_json_str(&s)?;
@@ -93,11 +105,13 @@ pub async fn get_browserinfo(bicmid: String, user: String) -> Result<(BroInfo, B
     Ok((broinfo, browser))
 }
 
-// a base64 encoded uuid on browser's local strage.
+/// Retrieves or creates an anonymous browser identifier (BICMID) from `localStorage`.
+/// 
+/// If it doesn't exist, a new UUID (V4) is generated and stored.
 async fn get_or_create_bicmid() -> Result<String> {
     use base64::Engine;
 
-    // check 'localStrage'
+    // check 'localStrage' support
     let v =
         document::eval(r#"{var r=false;if('localStorage' in window){r=true}return r;}"#).await?;
     if !v.as_bool().unwrap_or(false) {
@@ -107,7 +121,6 @@ async fn get_or_create_bicmid() -> Result<String> {
     let js_get: &str = r#"{return window.localStorage.getItem('anon_bicmid');}"#;
     let v = document::eval(js_get).await?;
     let ss = v.as_str().unwrap_or("");
-    //dioxus::logger::tracing::debug!("anon_bicmid: '{ss}'");
     if !ss.is_empty() {
         Ok(ss.to_string())
     } else {
@@ -122,6 +135,7 @@ async fn get_or_create_bicmid() -> Result<String> {
     }
 }
 
+/// Server function to retrieve the current database path.
 pub async fn get_db_path() -> Result<String> {
     backends::get_db_path().await
 }
