@@ -16,7 +16,7 @@ pub use super::SaveBroInfoRequest;
 pub use super::SaveUserAgentRequest;
 
 /// Extracts the client's IP address from HTTP headers.
-/// 
+///
 /// Specifically looks for the `x-forwarded-for` header to handle requests behind a proxy.
 #[allow(unused)]
 #[cfg(feature = "server")]

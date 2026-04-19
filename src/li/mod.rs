@@ -74,7 +74,7 @@ pub fn BrowserInfoCm(mut props: BrowserInfoProps) -> Element {
 }
 
 /// Gathers browser information using JavaScript execution and saves it to the backend.
-/// 
+///
 /// Returns a tuple of `(BroInfo, Browser)` on success.
 pub async fn get_browserinfo(bicmid: String, user: String) -> Result<(BroInfo, Browser)> {
     use browserinfo::FromJsonStr;
@@ -106,7 +106,7 @@ pub async fn get_browserinfo(bicmid: String, user: String) -> Result<(BroInfo, B
 }
 
 /// Retrieves or creates an anonymous browser identifier (BICMID) from `localStorage`.
-/// 
+///
 /// If it doesn't exist, a new UUID (V4) is generated and stored.
 async fn get_or_create_bicmid() -> Result<String> {
     use base64::Engine;

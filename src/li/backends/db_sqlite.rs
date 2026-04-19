@@ -152,7 +152,7 @@ pub async fn save_user_agent(req: super::SaveUserAgentRequest) -> Result<()> {
 }
 
 /// Server function to save full browser information to the database.
-/// 
+///
 /// Normalizes and stores JS info, User Agent, Referrer, IP Address, BICMID, and User ID.
 #[post("/api/v1/browserinfo1", headers: dioxus::fullstack::HeaderMap)]
 pub async fn save_broinfo(req: super::SaveBroInfoRequest) -> Result<Option<Browser>> {
