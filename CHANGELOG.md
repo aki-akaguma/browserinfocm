@@ -6,12 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+
+## [0.2.0] (2026-04-19)
 ### Added
 * doc comments
 
 ### Changed
+* The four `Signal<>`s in `BrowserInfoProps` are combined into one struct and `Signal<>`.
 * I reorganized the dependencies in `Cargo.toml`.
-
 
 ## [0.1.17] (2026-04-16)
 ### Changed
@@ -122,7 +125,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 * first commit
 
-[Unreleased]: https://github.com/aki-akaguma/browserinfocm/compare/v0.1.17..HEAD
+[Unreleased]: https://github.com/aki-akaguma/browserinfocm/compare/v0.2.0..HEAD
+[0.2.0]: https://github.com/aki-akaguma/browserinfocm/compare/v0.1.17..v0.2.0
 [0.1.17]: https://github.com/aki-akaguma/browserinfocm/compare/v0.1.16..v0.1.17
 [0.1.16]: https://github.com/aki-akaguma/browserinfocm/compare/v0.1.15..v0.1.16
 [0.1.15]: https://github.com/aki-akaguma/browserinfocm/compare/v0.1.14..v0.1.15

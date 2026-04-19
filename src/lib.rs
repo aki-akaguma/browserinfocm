@@ -8,26 +8,20 @@ This is the dioxus component of the browser information.
 ```rust
 use dioxus::prelude::*;
 use browserinfo::{BroInfo, Browser};
-use browserinfocm::BrowserInfoCm;
+use browserinfocm::{BrowserInfoCm, BrowserInfoState};
 
 #[component]
 fn BroInfoHome() -> Element {
-    let broinfo_sig = use_signal(BroInfo::default);
-    let browser_sig = use_signal(Browser::default);
-    let bicmid_sig = use_signal(String::new);
-    let user_sig = use_signal(String::new);
+    let state_sig = use_signal(BrowserInfoState::default);
 
-    let brg = browser_sig.read().clone();
-    let bim = broinfo_sig.read().clone();
-    let brg_s = format!("{:?}", brg);
-    let bim_s = format!("{:?}", bim);
-    let bicmid = bicmid_sig.read().clone();
-    let bicmid_s = format!("{:?}", bicmid);
-    let user = user_sig.read().clone();
-    let user_s = format!("{:?}", user);
+    let state = state_sig.read();
+    let brg_s = format!("{:?}", state.browser);
+    let bim_s = format!("{:?}", state.broinfo);
+    let bicmid_s = format!("{:?}", state.bicmid);
+    let user_s = format!("{:?}", state.user);
 
     rsx! {
-        BrowserInfoCm { broinfo: broinfo_sig, browser: browser_sig, bicmid: bicmid_sig, user: user_sig }
+        BrowserInfoCm { state: state_sig }
         div { "{brg_s}" }
         div {}
         div { "{bim_s}" }

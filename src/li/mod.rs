@@ -37,17 +37,24 @@ pub struct SaveUserAgentRequest {
 #[allow(unused_imports)]
 pub use backends::get_ip_address_string;
 
+/// State structure containing gathered browser and user information.
+#[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]
+pub struct BrowserInfoState {
+    /// The detailed browser information.
+    pub broinfo: BroInfo,
+    /// The parsed browser details.
+    pub browser: Browser,
+    /// The anonymous browser identifier (BICMID).
+    pub bicmid: String,
+    /// Custom user identifier string.
+    pub user: String,
+}
+
 /// Properties for the `BrowserInfoCm` component.
 #[derive(Props, Debug, Clone, PartialEq)]
 pub struct BrowserInfoProps {
-    /// Signal to store the gathered `BroInfo`. Set by the component.
-    broinfo: Signal<BroInfo>,
-    /// Signal to store the parsed `Browser` information. Set by the component.
-    browser: Signal<Browser>,
-    /// Signal to store the `bicmid` (anonymous identifier). Set by the component.
-    bicmid: Signal<String>,
-    /// Signal for the user identifier. This is passed from the parent to the backend.
-    user: Signal<String>,
+    /// Signal to store the gathered browser information and user identifier.
+    state: Signal<BrowserInfoState>,
 }
 
 /// A Dioxus component that automatically gathers browser information and an anonymous ID (BICMID).
@@ -57,11 +64,13 @@ pub fn BrowserInfoCm(mut props: BrowserInfoProps) -> Element {
     use_future(move || async move {
         match get_or_create_bicmid().await {
             Ok(bicmid) => {
-                props.bicmid.set(bicmid.clone());
-                match get_browserinfo(bicmid, (props.user)()).await {
+                props.state.write().bicmid = bicmid.clone();
+                let user = props.state.read().user.clone();
+                match get_browserinfo(bicmid, user).await {
                     Ok((broinfo, browser)) => {
-                        props.broinfo.set(broinfo);
-                        props.browser.set(browser);
+                        let mut state = props.state.write();
+                        state.broinfo = broinfo;
+                        state.browser = browser;
                     }
                     Err(e) => dioxus::logger::tracing::error!("Failed to get browser info: {e}"),
                 }

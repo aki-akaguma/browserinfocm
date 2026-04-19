@@ -5,8 +5,8 @@ use dioxus::prelude::*;
 
 mod li;
 
-use browserinfo::{BroInfo, Browser};
 use li::BrowserInfoCm;
+use li::BrowserInfoState;
 
 fn main() {
     // you can set the ports and IP manually with env vars:
@@ -54,22 +54,17 @@ fn BroInfoHome() -> Element {
     });
     let db_path_s = db_path_sig.read().clone();
 
-    let broinfo_sig = use_signal(BroInfo::default);
-    let browser_sig = use_signal(Browser::default);
-    let bicmid_sig = use_signal(String::new);
-    let user_sig = use_signal(String::new);
+    let state_sig = use_signal(BrowserInfoState::default);
 
-    let brg_s = format!("{:?}", browser_sig.read());
-    let bim_s = format!("{:?}", broinfo_sig.read());
-    let bicmid_s = bicmid_sig.read().clone();
-    let user_s = user_sig.read().clone();
+    let state = state_sig.read();
+    let brg_s = format!("{:?}", state.browser);
+    let bim_s = format!("{:?}", state.broinfo);
+    let bicmid_s = state.bicmid.clone();
+    let user_s = state.user.clone();
 
     rsx! {
         BrowserInfoCm {
-            broinfo: broinfo_sig,
-            browser: browser_sig,
-            bicmid: bicmid_sig,
-            user: user_sig,
+            state: state_sig,
         }
         div {
             h3 { "System Information" }
