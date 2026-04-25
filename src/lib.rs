@@ -5,13 +5,16 @@ This is the dioxus component of the browser information.
 
 #### The Component
 
+Call `browserinfocm::backend_init()` from `fn main()` as follows.
+
 ```rust
 # fn main() {
-    #[cfg(feature = "server")]
-    browserinfocm::backend_init().expect("faile to init backend");
-    // ...
+#[cfg(feature = "server")]
+browserinfocm::backend_init().expect("faile to init backend");
 # }
 ```
+
+Next, use the `BrowserInfoCm {}` component.
 
 ```rust
 use dioxus::prelude::*;

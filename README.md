@@ -14,11 +14,14 @@ This is the dioxus component of the browser information.
 
 ##### The Component
 
+Call `browserinfocm::backend_init()` from `fn main()` as follows.
+
 ```rust
-    #[cfg(feature = "server")]
-    browserinfocm::backend_init().expect("faile to init backend");
-    // ...
+#[cfg(feature = "server")]
+browserinfocm::backend_init().expect("faile to init backend");
 ```
+
+Next, use the `BrowserInfoCm {}` component.
 
 ```rust
 use dioxus::prelude::*;
@@ -65,8 +68,8 @@ server = ["dioxus/server", "browserinfocm/server"]
 + `BROWSERINFOCM__DATABSE__DB_FILE`: ex.) `browserinfocm.db`
 
 ## Patches
-### dioxus-fullstack (0.7.5)
-- **File:** \`patches/dioxus-fullstack+0.7.5.patch\`
+### dioxus-fullstack (0.7.6)
+- **File:** \`patches/dioxus-fullstack+0.7.6.patch\`
 - **Reason:** Fixed an issue where URL construction was incorrect when \`get_server_url()\` returned a relative path (starting with \`/\`). This ensures stability in environments where the server URL is dynamically configured, such as mobile or specific deployment setups.
 
 
