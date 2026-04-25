@@ -4,13 +4,15 @@
 use anyhow::Result;
 use browserinfo::{broinfo_js, BroInfo, Browser};
 use dioxus::prelude::*;
+use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "backend_user_agent")]
 use browserinfo::{user_agent_js, UserAgent};
 
 mod backends;
 
-use serde::{Deserialize, Serialize};
+#[cfg(feature = "server")]
+pub use backends::backend_init;
 
 /// Request structure for saving browser information to the backend.
 #[derive(Serialize, Deserialize, Debug, Default, Clone, PartialEq)]

@@ -54,6 +54,14 @@ async fn create_sqlx_pool() -> Result<sqlx::sqlite::SqlitePool> {
 /// Resolves the database file path based on environment variables or defaults.
 #[cfg(feature = "server")]
 fn get_db_path_() -> PathBuf {
+    let cfg = super::config::BackendConfig::global();
+    let mut data_dir = data_base_dir();
+    data_dir.push(&cfg.database.db_file);
+    data_dir
+}
+/*
+#[cfg(feature = "server")]
+fn get_db_path_() -> PathBuf {
     let key1 = "BROWSERINFOCM_DB_PATH";
     if let Ok(s) = std::env::var(key1) {
         return PathBuf::from(s);
@@ -75,8 +83,17 @@ fn get_db_path_() -> PathBuf {
     data_dir.push(db_file);
     data_dir
 }
+*/
 
 /// Returns the base directory for data storage.
+#[cfg(feature = "server")]
+fn data_base_dir() -> PathBuf {
+    let cfg = super::config::BackendConfig::global();
+    let pb = PathBuf::from(&cfg.database.base_path);
+    let _ = std::fs::create_dir_all(&pb);
+    pb
+}
+/*
 #[cfg(feature = "server")]
 fn data_dir() -> PathBuf {
     let data_dir: PathBuf;
@@ -91,6 +108,7 @@ fn data_dir() -> PathBuf {
     }
     return data_dir;
 }
+*/
 
 /// Returns the data directory within the user's home directory.
 #[cfg(feature = "backend_homedir")]
@@ -184,12 +202,12 @@ pub async fn save_broinfo(req: super::SaveBroInfoRequest) -> Result<Option<Brows
             r#" (jsinfo_id, user_agent_id, referrer_id, ip_address_id, bicmid_id, user_id)"#,
             r#" VALUES (?, ?, ?, ?, ?, ?)"#
         ))
-        .bind(&jsinfo_id)
-        .bind(&user_agent_id)
-        .bind(&referrer_id)
-        .bind(&ip_address_id)
-        .bind(&bicmid_id)
-        .bind(&user_id)
+        .bind(jsinfo_id)
+        .bind(user_agent_id)
+        .bind(referrer_id)
+        .bind(ip_address_id)
+        .bind(bicmid_id)
+        .bind(user_id)
         .execute(&mut *tx)
         .await?;
         //
@@ -335,8 +353,7 @@ fn create_jsinfo_hash(s: &str) -> String {
     use base64::Engine;
 
     let hash_bytes = hmac_sha256::Hash::hash(s.as_bytes());
-    let hash_base64_s = base64::engine::general_purpose::STANDARD_NO_PAD.encode(hash_bytes);
-    hash_base64_s
+    base64::engine::general_purpose::STANDARD_NO_PAD.encode(hash_bytes)
 }
 
 #[cfg(feature = "server")]

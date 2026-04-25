@@ -6,6 +6,14 @@ This is the dioxus component of the browser information.
 #### The Component
 
 ```rust
+# fn main() {
+    #[cfg(feature = "server")]
+    browserinfocm::backend_init().expect("faile to init backend");
+    // ...
+# }
+```
+
+```rust
 use dioxus::prelude::*;
 use browserinfo::{BroInfo, Browser};
 use browserinfocm::{BrowserInfoCm, BrowserInfoState};
@@ -46,9 +54,8 @@ server = ["dioxus/server", "browserinfocm/server"]
 ```
 
 ### Runtime Environment
-+ `BROWSERINFOCM_DB_PATH`: ex.) `/var/local/data/broinfo/browserinfocm.db`
-+ `BROWSERINFOCM_DB_BASE_PATH`:  ex.) `/var/local/mydata/broinfo`
-+ `BROWSERINFOCM_DB_FILE`: ex.) `browserinfocm.db`
++ `BROWSERINFOCM__DATABSE__BASE_PATH`:  ex.) `/var/local/mydata/broinfo`
++ `BROWSERINFOCM__DATABSE__DB_FILE`: ex.) `browserinfocm.db`
 */
 /// Internal module containing components and backends.
 mod li;

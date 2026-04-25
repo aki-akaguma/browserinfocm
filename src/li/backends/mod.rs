@@ -1,10 +1,13 @@
 //! Backend module for handling data persistence.
 //! Switches between local SQLite storage and remote forwarding based on feature flags.
-
 #[cfg(not(feature = "backend_next"))]
 mod db_sqlite;
 #[cfg(not(feature = "backend_next"))]
 pub use db_sqlite::*;
+
+#[cfg(not(feature = "backend_next"))]
+#[cfg(feature = "server")]
+mod config;
 
 #[cfg(feature = "backend_next")]
 mod forwarder;
@@ -14,6 +17,11 @@ pub use forwarder::*;
 pub use super::SaveBroInfoRequest;
 #[cfg(feature = "backend_user_agent")]
 pub use super::SaveUserAgentRequest;
+
+#[cfg(feature = "server")]
+pub fn backend_init() -> anyhow::Result<()> {
+    config::BackendConfig::init()
+}
 
 /// Extracts the client's IP address from HTTP headers.
 ///

@@ -9,6 +9,9 @@ use li::BrowserInfoCm;
 use li::BrowserInfoState;
 
 fn main() {
+    #[cfg(feature = "server")]
+    li::backend_init().expect("faile to init backend");
+
     // you can set the ports and IP manually with env vars:
     // server launch:
     // IP="0.0.0.0" PORT=8080 ./server
