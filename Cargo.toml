@@ -1,8 +1,8 @@
 [package]
 name = "browserinfocm"
-version = "0.2.1"
+version = "0.2.2"
 authors = ["aki <aki.akaguma@hotmail.com>"]
-edition = "2021"
+edition = "2024"
 description = """
 dioxus component that provides browser and hardware information
 """
