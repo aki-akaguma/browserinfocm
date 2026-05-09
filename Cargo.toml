@@ -14,15 +14,15 @@ build = "build.rs"
 rust-version = "1.90.0"
 repository = "https://github.com/aki-akaguma/broinfocm"
 
-[package.metadata.patch]
-crates = ["dioxus-fullstack"]
-
-[patch.crates-io]
-dioxus-fullstack = { path = "./patched/dioxus-fullstack-0.7.7" }
+#[package.metadata.patch]
+#crates = ["dioxus-fullstack"]
+#
+#[patch.crates-io]
+#dioxus-fullstack = { path = "./patched/dioxus-fullstack-0.7.7" }
 
 [dependencies]
 # dioxus family
-dioxus = { version = "0.7.7", features = ["fullstack"] }
+dioxus = { version = "0.7.9", features = ["fullstack"] }
 
 # what dioxus depends on
 anyhow = { version = "1.0" }
